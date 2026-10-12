@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Centrifugal Pump Sizing — Case Study Tool | Joshua Sharpes</title>
+<style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:    #0F172A;
+      --navy2:   #1E293B;
+      --blue:    #2563EB;
+      --blue-lt: #EFF6FF;
+      --steel:   #334155;
+      --muted:   #64748B;
+      --border:  #E2E8F0;
+      --bg:      #F8FAFC;
+      --white:   #FFFFFF;
+      --radius:  8px;
+      --shadow:  0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+      --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                   'Helvetica Neue', Arial, sans-serif;
+      font-size: 15px; line-height: 1.6; color: var(--steel); background: var(--bg);
+    }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+    section { padding: 56px 0; }
+    section:nth-child(even) { background: var(--white); }
+    .section-label { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--blue); margin-bottom: 6px; }
+    .section-title { font-size: 22px; font-weight: 700; color: var(--navy); margin-bottom: 10px; }
+    .section-desc  { font-size: 14px; color: var(--muted); max-width: 620px; margin-bottom: 32px; line-height: 1.65; }
+
+    /* ── Hero ── */
+    .hero { background: var(--navy); padding: 72px 0 64px; color: var(--white); }
+    .hero-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: #60A5FA; margin-bottom: 12px; }
+    .hero-name    { font-size: 42px; font-weight: 800; color: var(--white); line-height: 1.15; margin-bottom: 16px; letter-spacing: -.5px; }
+    .hero-statement { font-size: 17px; color: #CBD5E1; max-width: 580px; line-height: 1.7; margin-bottom: 32px; }
+    .hero-statement strong { color: var(--white); }
+    .hero-links { display: flex; flex-wrap: wrap; gap: 12px; }
+    .hero-link { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: var(--radius); font-size: 13px; font-weight: 600; transition: opacity .15s; }
+    .hero-link:hover { opacity: .85; text-decoration: none; }
+    .hero-link-primary { background: var(--blue); color: var(--white); }
+    .hero-link-outline { background: transparent; color: #CBD5E1; border: 1px solid #334155; }
+    .hero-link-outline.active { background: var(--blue); color: var(--white); border-color: var(--blue); }
+
+    /* ── Narrative ── */
+    section.narrative { background: var(--navy2); padding: 48px 0; }
+    .narrative p { font-size: 15px; color: #E2E8F0; line-height: 1.8; max-width: 700px; }
+    .narrative p + p { margin-top: 14px; }
+    .narrative strong { color: #F1F5F9; font-weight: 700; }
+    .stat-row { display: flex; flex-wrap: wrap; gap: 32px; margin-top: 32px; }
+    .stat { display: flex; flex-direction: column; }
+    .stat-num { font-size: 32px; font-weight: 800; color: #60A5FA; line-height: 1; }
+    .stat-lbl  { font-size: 12px; color: #CBD5E1; margin-top: 4px; text-transform: uppercase; letter-spacing: .08em; }
+
+    /* ── Card grid ── */
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .cards-2col { grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); }
+    .card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 10px; transition: box-shadow .15s, transform .15s; }
+    .card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+    .card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .card-title  { font-size: 15px; font-weight: 700; color: var(--navy); line-height: 1.35; }
+    .badge { flex-shrink: 0; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; }
+    .badge-ppt  { background: #FEF3C7; color: #92400E; }
+    .badge-notes{ background: #DCFCE7; color: #166534; }
+    .card-desc  { font-size: 13px; color: var(--muted); line-height: 1.55; }
+    .card-link  { margin-top: auto; padding-top: 8px; font-size: 13px; font-weight: 600; color: var(--blue); display: inline-flex; align-items: center; gap: 4px; }
+    .card-link::after { content: ' →'; }
+    .card-link-yt { color: #fff; background: #FF0000; padding: 2px 10px; border-radius: 4px; margin-left: 8px; }
+    .card-link-yt::after { content: none; }
+    .card-link-yt:hover { background: #CC0000; }
+
+    /* ── Project cards ── */
+    .project-card { background: var(--white); border: 1px solid var(--border); border-left: 4px solid var(--blue); border-radius: var(--radius); padding: 24px 26px; box-shadow: var(--shadow); transition: box-shadow .15s, transform .15s; }
+    .project-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+    .project-card-title { font-size: 17px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+    .project-card-desc  { font-size: 14px; color: var(--muted); line-height: 1.65; margin-bottom: 16px; }
+    .project-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+    .project-tag  { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; background: var(--blue-lt); color: var(--blue); }
+    .project-link { display: inline-flex; align-items: center; gap: 6px; padding: 9px 20px; background: var(--blue); color: var(--white); border-radius: var(--radius); font-size: 13px; font-weight: 600; transition: opacity .15s; }
+    .project-link:hover { opacity: .88; text-decoration: none; }
+
+    /* ── Collapsible sub-sections ── */
+    details { margin-bottom: 18px; }
+    summary {
+      list-style: none; cursor: pointer;
+      font-size: 14px; font-weight: 700; color: var(--navy);
+      padding: 11px 16px; background: var(--bg);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      display: flex; align-items: center; gap: 10px;
+      user-select: none; transition: background .12s, border-color .12s;
+    }
+    /* Top-level tool/section headers only (direct children of .container) stay pinned while the
+       user scrolls through that section's content, so they always know which tool they're in, and
+       release on their own once the section ends and the next one takes over -- native `sticky`
+       bounds itself to the parent <details>, so nothing further is needed for the "release" half.
+       Deliberately NOT applied to nested summaries (e.g. a tool's own internal "Advanced assumptions"
+       toggle), which are never a direct child of .container. */
+    .container > details > summary {
+      position: sticky; top: 12px; z-index: 40;
+      box-shadow: 0 2px 8px rgba(0,0,0,.07);
+    }
+    .container > details[open] > summary { box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+    summary::-webkit-details-marker { display: none; }
+    summary::marker { display: none; }
+    summary:hover { background: #eef1f6; border-color: #c8d0dc; }
+    details[open] > summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom-color: var(--blue); }
+    .sum-arrow { display: inline-block; width: 16px; text-align: center; font-size: 11px; color: var(--muted); transition: transform .18s; flex-shrink: 0; }
+    details[open] > summary .sum-arrow { transform: rotate(90deg); }
+    .sum-title { flex: 1; }
+    .sum-count { font-size: 11px; font-weight: 600; color: var(--muted); background: var(--white); padding: 2px 8px; border-radius: 20px; border: 1px solid var(--border); flex-shrink: 0; }
+    .details-body { padding: 20px 0 4px; }
+
+    /* ── Notes grid ── */
+    .notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+    .note-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 8px; transition: box-shadow .15s, transform .15s; }
+    .note-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+    .note-icon   { font-size: 22px; line-height: 1; }
+    .note-title  { font-size: 13px; font-weight: 700; color: var(--navy); }
+    .note-source { font-size: 11px; color: var(--muted); }
+    .note-link   { font-size: 12px; font-weight: 600; color: var(--blue); }
+
+    /* ── Book cover strip (matches personal site style) ── */
+    .book-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      padding: 18px 0 4px;
+      align-items: flex-end;
+    }
+    .book-cover {
+      height: 180px;
+      width: auto;
+      display: block;
+      border-radius: 3px;
+      box-shadow: 0 3px 10px rgba(0,0,0,.25);
+      transition: transform .15s, box-shadow .15s;
+      background: #dde;
+    }
+    .book-cover:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 6px 18px rgba(0,0,0,.3);
+    }
+    .book-cover[src=""] { display: none; }
+
+    /* ── Video grid ── */
+    .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+    .video-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); cursor: pointer; transition: box-shadow .15s, transform .15s; }
+    .video-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .video-thumb { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; overflow: hidden; }
+    .video-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity .2s; }
+    .video-card:hover .video-thumb img { opacity: .85; }
+    .play-btn { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+    .play-btn::after  { content: ''; width: 44px; height: 44px; background: rgba(0,0,0,.65); border-radius: 50%; }
+    .play-btn::before { content: '▶'; position: absolute; color: #fff; font-size: 16px; margin-left: 3px; z-index: 1; }
+    .video-thumb iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
+    .video-info     { padding: 10px 12px 12px; }
+    .video-title    { font-size: 12px; font-weight: 600; color: var(--navy); line-height: 1.4; margin-bottom: 4px; }
+    .video-duration { font-size: 11px; color: var(--muted); }
+
+    /* ── Footer ── */
+    footer { background: var(--navy); padding: 32px 0; color: #64748B; font-size: 13px; }
+    footer .container { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    footer a { color: #94A3B8; }
+    footer a:hover { color: var(--white); text-decoration: none; }
+
+    @media (max-width: 640px) {
+      .hero-name      { font-size: 30px; }
+      .hero-statement { font-size: 15px; }
+      .cards-2col     { grid-template-columns: 1fr; }
+      .notes-grid     { grid-template-columns: repeat(2, 1fr); }
+      .stat-row       { gap: 20px; }
+      section         { padding: 40px 0; }
+      .book-cover     { height: 140px; }
+    }
+
+    /* ── Resume side-by-side split view ── */
+    :root { --resume-split: 60%; }
+    body.resume-split { overflow: hidden; }
+    body.resume-split #site-content {
+      position: fixed; top: 0; bottom: 0; left: 0;
+      width: var(--resume-split);
+      overflow-y: auto; overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
+    .resume-resizer {
+      display: none;
+      position: fixed; top: 0; bottom: 0;
+      left: var(--resume-split);
+      width: 10px; margin-left: -5px;
+      cursor: ew-resize;
+      z-index: 1001;
+      background: transparent;
+    }
+    .resume-resizer::before {
+      content: '';
+      position: absolute; top: 0; bottom: 0; left: 4px;
+      width: 2px; background: var(--border);
+    }
+    .resume-resizer::after {
+      content: '\21D4'; /* ⇔ double-headed arrow */
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 22px; height: 22px; line-height: 22px; text-align: center;
+      border-radius: 50%; background: var(--navy); color: #fff;
+      font-size: 13px; box-shadow: var(--shadow-md);
+    }
+    .resume-resizer:hover::before, .resume-resizer.dragging::before { background: var(--blue); }
+    body.resume-split .resume-resizer { display: block; }
+    body.resume-dragging { cursor: ew-resize !important; user-select: none; }
+    body.resume-dragging .resume-resizer::before { background: var(--blue); }
+    .resume-pane {
+      display: none;
+      position: fixed; top: 0; bottom: 0; right: 0;
+      left: var(--resume-split);
+      flex-direction: column;
+      background: #525659;
+      z-index: 1000;
+    }
+    body.resume-split .resume-pane { display: flex; }
+    .resume-pane-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; padding: 8px 14px; background: var(--navy); color: #fff;
+      font-size: 12.5px; flex-shrink: 0;
+    }
+    .resume-pane-bar span { opacity: .85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .resume-pane-actions { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+    .resume-pane-actions a { color: #fff; opacity: .85; font-size: 12.5px; }
+    .resume-pane-actions a:hover { opacity: 1; text-decoration: underline; }
+    .resume-pane-close {
+      background: none; border: none; color: #fff; font-size: 16px; line-height: 1;
+      cursor: pointer; opacity: .85; padding: 2px 4px;
+    }
+    .resume-pane-close:hover { opacity: 1; }
+    .resume-pane iframe { flex: 1; border: none; width: 100%; background: #525659; }
+    @media (max-width: 768px) {
+      .resume-resizer, .resume-pane { display: none !important; }
+      body.resume-split { overflow: visible; }
+      body.resume-split #site-content { position: static; width: auto; overflow: visible; }
+    }
+  </style>
+</head>
+<body>
+<section>
+  <div class="container">
+    <div class="section-label">Process Engineering Tools</div>
+    <h2 class="section-title">Centrifugal Pump Sizing — Case Study Tool</h2>
+    <p class="section-desc">Standalone copy of the calculator on <a href="https://jsharpes-portfolio.netlify.app">jsharpes-portfolio.netlify.app</a>.
+    Method, sources, validation and limits: <a href="README.md">README.md</a> in this folder.</p>
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:28px;">
+      <span style="font-size:11px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.08em;">Units</span>
+      <div role="group" aria-label="Unit system" style="display:inline-flex; border:1px solid var(--border); border-radius:3px; overflow:hidden;">
+        <button type="button" id="site-unitBtn-us" class="site-unitBtn active" style="padding:6px 16px; font-size:13px; font-weight:600; border:none; cursor:pointer;">US</button>
+        <button type="button" id="site-unitBtn-si" class="site-unitBtn" style="padding:6px 16px; font-size:13px; font-weight:600; border:none; cursor:pointer; border-left:1px solid var(--border);">SI</button>
+      </div>
+      <span style="font-size:12px; color:var(--muted);">applies to every calculator below</span>
+    </div>
+    <script>
+      window.SITE_UNIT_SYS = window.SITE_UNIT_SYS || 'us';
+      // Shared conversion helpers -- every calculator's own IIFE may call these instead of
+      // duplicating the switch statement. Calc engines stay US-customary internally always;
+      // these only convert for display/input-reading, exactly like cps-calc's original pattern.
+      window.usToSi = function(kind, v){
+        switch(kind){
+          case 'flow': return v*0.2271247;      // gpm -> m3/h
+          case 'len_ft': return v*0.3048;       // ft -> m
+          case 'len_in': return v*25.4;         // in -> mm
+          case 'area_in2': return v*645.16;     // in2 -> mm2
+          case 'vel': return v*0.3048;          // ft/s -> m/s
+          case 'press': return v*6.894757;      // psi(a/g) -> kPa
+          case 'power': return v*0.7456999;     // hp -> kW
+          case 'force': return v*4.448222;      // lbf -> N
+          case 'temp': return (v-32)/1.8;       // degF -> degC (affine)
+          case 'mass_hr': return v*0.45359237;  // lb/hr -> kg/hr
+          case 'density': return v*16.018463;   // lb/ft3 -> kg/m3
+          case 'htc': return v*5.678263;        // Btu/(hr.ft2.F) -> W/(m2.K)
+          default: return v;
+        }
+      };
+      window.siToUs = function(kind, v){
+        switch(kind){
+          case 'flow': return v/0.2271247;
+          case 'len_ft': return v/0.3048;
+          case 'len_in': return v/25.4;
+          case 'area_in2': return v/645.16;
+          case 'vel': return v/0.3048;
+          case 'press': return v/6.894757;
+          case 'power': return v/0.7456999;
+          case 'force': return v/4.448222;
+          case 'temp': return v*1.8+32;
+          case 'mass_hr': return v/0.45359237;
+          case 'density': return v/16.018463;
+          case 'htc': return v/5.678263;
+          default: return v;
+        }
+      };
+      window.UNIT_LABEL_SITE = {
+        flow:{us:'gpm',si:'m³/h'}, len_ft:{us:'ft',si:'m'}, len_in:{us:'in',si:'mm'},
+        area_in2:{us:'in²',si:'mm²'}, vel:{us:'ft/s',si:'m/s'}, press:{us:'psi',si:'kPa'},
+        power:{us:'hp',si:'kW'}, force:{us:'lbf',si:'N'}, temp:{us:'°F',si:'°C'},
+        mass_hr:{us:'lb/hr',si:'kg/hr'}, density:{us:'lb/ft³',si:'kg/m³'},
+      };
+      (function(){
+        var usBtn = document.getElementById('site-unitBtn-us'), siBtn = document.getElementById('site-unitBtn-si');
+        function setSiteUnits(sys){
+          if(sys === window.SITE_UNIT_SYS) return;
+          window.SITE_UNIT_SYS = sys;
+          usBtn.classList.toggle('active', sys==='us');
+          siBtn.classList.toggle('active', sys==='si');
+          window.dispatchEvent(new CustomEvent('site-units-change', {detail:{sys:sys}}));
+        }
+        usBtn.addEventListener('click', function(){ setSiteUnits('us'); });
+        siBtn.addEventListener('click', function(){ setSiteUnits('si'); });
+      })();
+    </script>
+    <style>
+      .site-unitBtn{background:var(--white); color:var(--muted);}
+      .site-unitBtn.active{background:var(--blue); color:#fff;}
+      .site-unitBtn:not(.active):hover{background:var(--bg);}
+    </style>
+    <details open>
+      <summary>
+        <span class="sum-arrow">›</span>
+        <span class="sum-title">Centrifugal Pump Sizing — Case Study Tool</span>
+        <span class="sum-count">USC/SI toggle</span>
+      </summary>
+      <div class="details-body">
+
+<style>#cps-calc{
+    --bg:#fafafa; --panel:#ffffff; --panel2:#f4f4f2; --border:#e0e0e0;
+    --text:#2a2a2a; --heading:#1a1a1a; --muted:#6b6b6b; --accent:#0f7a8c; --accent-dark:#0b5f6d;
+    --warn-bd:#a8791f; --warn-tx:#8a6215;
+    --bad-bd:#a83d3d; --bad-tx:#8f3232;
+    --ok-bd:#2f8a5f; --ok-tx:#256e4b;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  }#cps-calc *{box-sizing:border-box;}#cps-calc body{background:var(--bg); color:var(--text); margin:0; padding:28px 40px 72px; max-width:1400px;}#cps-calc h1{font-size:1.5rem; margin:0 0 4px; color:var(--heading); font-weight:600;}#cps-calc .subtitle{color:var(--muted); font-size:0.86rem; margin-bottom:22px; max-width:900px; line-height:1.5;}#cps-calc h2{font-size:1rem; border-bottom:1px solid var(--border); padding-bottom:7px; margin-top:0; color:var(--heading); font-weight:600;}#cps-calc h3{font-size:0.86rem; color:var(--accent-dark); margin:14px 0 6px; font-weight:600;}#cps-calc code{font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace; font-size:0.92em; background:var(--panel2); padding:1px 5px; border-radius:2px;}#cps-calc .layout{display:grid; grid-template-columns: 340px 1fr; gap:26px; align-items:start;}
+  @media (max-width: 900px){#cps-calc .layout{grid-template-columns: 1fr;}}#cps-calc .panel{background:var(--panel); border:1px solid var(--border); border-radius:3px; padding:18px 20px;}#cps-calc .field{margin-bottom:11px;}#cps-calc label{display:block; font-size:0.76rem; color:var(--muted); margin-bottom:3px;}#cps-calc input[type=number], #cps-calc input[type=text], #cps-calc select{
+    width:100%; padding:6px 8px; background:#fff; border:1px solid var(--border);
+    border-radius:2px; color:var(--text); font-size:0.86rem; font-family:"SFMono-Regular",Consolas,monospace;
+  }#cps-calc select{font-family:inherit;}#cps-calc input[type=range]{width:100%; accent-color:var(--accent); margin-top:2px;}#cps-calc .sliderRow{display:flex; align-items:center; gap:8px;}#cps-calc .sliderRow input[type=range]{flex:1;}#cps-calc .sliderRow input[type=number]{width:86px; flex:0 0 86px;}#cps-calc .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}#cps-calc .unit{color:var(--muted); font-size:0.72rem; margin-left:4px; font-family:inherit;}#cps-calc details{margin-top:10px; border-top:1px solid var(--border); padding-top:8px;}#cps-calc summary{cursor:pointer; color:var(--accent-dark); font-size:0.82rem; user-select:none;}#cps-calc table{width:100%; border-collapse:collapse; font-size:0.83rem; margin:8px 0 4px;}#cps-calc td, #cps-calc th{padding:5px 8px; border-bottom:1px solid var(--border); text-align:left;}#cps-calc th{color:var(--muted); font-weight:600; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.02em;}#cps-calc td.num{text-align:right; font-variant-numeric:tabular-nums; font-family:"SFMono-Regular",Consolas,monospace;}#cps-calc tr.selected{background:var(--panel2);}#cps-calc .banner{border-left:3px solid var(--border); background:var(--panel2); padding:9px 12px; margin-bottom:10px; font-size:0.84rem; line-height:1.5;}#cps-calc .banner.warn{border-color:var(--warn-bd); color:var(--warn-tx);}#cps-calc .banner.bad{border-color:var(--bad-bd); color:var(--bad-tx);}#cps-calc .banner.ok{border-color:var(--ok-bd); color:var(--ok-tx);}#cps-calc .pill{display:inline-block; font-size:0.72rem; font-weight:600; margin-left:6px; font-family:"SFMono-Regular",Consolas,monospace;}#cps-calc .pill.ok{color:var(--ok-tx);}#cps-calc .pill.warn{color:var(--warn-tx);}#cps-calc .pill.bad{color:var(--bad-tx);}#cps-calc .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}#cps-calc .grid2{display:grid; grid-template-columns:repeat(2,1fr); gap:10px;}#cps-calc .stat{background:var(--panel2); border:1px solid var(--border); border-radius:2px; padding:10px 12px;}#cps-calc .stat .v{font-size:1.1rem; font-weight:700; font-family:"SFMono-Regular",Consolas,monospace; color:var(--heading);}#cps-calc .stat .l{font-size:0.72rem; color:var(--muted); margin-top:2px;}#cps-calc .stat .s{font-size:0.71rem; color:var(--muted); margin-top:2px;}#cps-calc .slidetag{font-size:0.68rem; color:var(--accent); font-family:"SFMono-Regular",Consolas,monospace; font-weight:normal; border-bottom:none;}#cps-calc .gap{background:var(--panel2); border-left:3px solid var(--warn-bd); padding:8px 10px; margin:6px 0; font-size:0.81rem; line-height:1.5;}#cps-calc .assume{background:var(--panel2); border-left:3px solid var(--accent); padding:7px 10px; margin:5px 0; font-size:0.8rem; line-height:1.5; color:var(--muted);}#cps-calc .note{background:var(--panel2); border-left:3px solid var(--accent); padding:9px 12px; font-size:0.78rem; color:var(--muted); margin-bottom:10px; line-height:1.5;}#cps-calc .mechbox{background:var(--panel2); border:1px solid var(--accent); border-radius:2px; padding:12px 14px; font-size:0.88rem; margin-bottom:10px; line-height:1.5;}#cps-calc .mechbox b{color:var(--accent-dark);}#cps-calc svg.chart{width:100%; height:auto; background:var(--panel); border:1px solid var(--border); border-radius:2px;}#cps-calc svg.chart text{fill:var(--muted); font-size:10px; font-family:"SFMono-Regular",Consolas,monospace;}#cps-calc svg.chart .grid{stroke:var(--border); stroke-width:1;}#cps-calc svg.chart .axis{stroke:#b0b0b0; stroke-width:1;}#cps-calc svg.chart .pt{fill:#c0392b; stroke:#fff; stroke-width:1.5;}#cps-calc footer{margin-top:34px; color:var(--text); font-size:0.86rem; line-height:1.6; max-width:900px; background:var(--panel); border:1px solid var(--border); border-radius:3px; padding:14px 16px;}#cps-calc a{color:var(--accent); text-decoration:underline;}#cps-calc .resultPanel{margin-bottom:14px; border-radius:3px;}#cps-calc .resultPanel > summary{list-style:none; cursor:pointer; user-select:none; display:flex; align-items:center; gap:8px;
+    font-size:1rem; font-weight:600; color:var(--heading); padding:12px 16px; background:var(--panel);
+    border:1px solid var(--border); border-radius:3px;}#cps-calc .resultPanel > summary::-webkit-details-marker{display:none;}#cps-calc .resultPanel > summary::before{content:'▸'; color:var(--accent); font-size:0.8em; transition:transform .12s;}#cps-calc .resultPanel[open] > summary::before{transform:rotate(90deg);}#cps-calc .resultPanel[open] > summary{border-bottom-left-radius:0; border-bottom-right-radius:0; border-bottom:1px solid var(--border);}#cps-calc .resultPanel > summary .slidetag{margin-left:auto; font-weight:normal;}#cps-calc .resultPanel-body{border:1px solid var(--border); border-top:none; border-bottom-left-radius:3px; border-bottom-right-radius:3px; padding:18px 20px; background:var(--panel);}
+  
+  @keyframes justUpdatedPulse{
+    0%{background:var(--panel);} 25%{background:#fff3cd;} 100%{background:var(--panel);}
+  }#cps-calc .resultPanel > summary.justUpdated{animation:justUpdatedPulse 1.6s ease-out;}#cps-calc .resultPanel > summary.justUpdated::after{content:'● updated'; margin-left:6px; color:var(--warn-tx); font-size:0.72rem; font-weight:600;}#cps-calc .unitBtn{background:var(--panel); color:var(--muted);}#cps-calc .unitBtn.active{background:var(--accent); color:#fff;}#cps-calc .unitBtn:not(.active):hover{background:var(--panel2);}
+</style>
+<div id="cps-calc">
+<h1>Centrifugal Pump Sizing — Case Study Tool</h1>
+<div class="subtitle">Runs input duty conditions through the workflow in <em>Centrifugal Pump Sizing.pptx</em> (single-stage, radial/mixed-flow only). Fluid properties come from a precomputed <code>thermo</code> table (11 pure compounds) embedded in this file — fully self-contained, no backend, drops straight into a static site. Every slider is bounded per <code>sizing_tool_parameter_limits.md</code>; less-frequently-changed constants are fixed in code rather than exposed here.</div>
+
+<div class="note" style="margin-bottom:18px;">Units controlled by the site-wide US/SI toggle at the top of the Process Engineering Tools section above.</div>
+
+<div class="layout">
+
+<!-- ============================ INPUT PANEL ============================ -->
+<div class="panel">
+  <h2>Fluid</h2>
+  <div class="field">
+    <label>Fluid</label>
+    <select id="cps-fluid"></select>
+  </div>
+  <div class="field">
+    <label>Temperature <span class="unit" id="cps-unit-T">°F</span></label>
+    <div class="sliderRow">
+      <input type="range" id="cps-T_slider" min="-40" max="400" step="1" value="70">
+      <input type="number" id="cps-T" min="-40" max="400" step="any" value="70">
+    </div>
+  </div>
+  <div class="row2">
+    <div class="field"><label>SG @ T <span class="unit">(auto, editable)</span></label>
+      <input type="number" id="cps-SG" value="1.0" min="0.01" step="any"></div>
+    <div class="field"><label>Viscosity <span class="unit">cP (auto)</span></label>
+      <input type="number" id="cps-visc" value="1.0" min="0.001" step="any"></div>
+  </div>
+  <div class="field"><label>Vapor pressure @ T <span class="unit" id="cps-unit-vp">psia (auto)</span></label>
+    <input type="number" id="cps-vp" value="0.36" min="0" step="any"></div>
+  <div class="field">
+    <label>Suspended solids / erosive service?</label>
+    <select id="cps-solids"><option value="no" selected>No</option><option value="yes">Yes</option></select>
+  </div>
+
+  <h2 style="margin-top:18px;">Duty conditions</h2>
+  <div class="field">
+    <label>Rated flow, Q <span class="unit" id="cps-unit-Q">gpm</span></label>
+    <div class="sliderRow">
+      <input type="range" id="cps-Q_slider" min="10" max="10000" step="1" value="500">
+      <input type="number" id="cps-Q" min="10" max="10000" step="any" value="500">
+    </div>
+  </div>
+  <div class="field">
+    <label>Rated head, H <span class="unit" id="cps-unit-H">ft</span></label>
+    <div class="sliderRow">
+      <input type="range" id="cps-H_slider" min="15" max="1000" step="1" value="250">
+      <input type="number" id="cps-H" min="15" max="1000" step="any" value="250">
+    </div>
+  </div>
+  <div class="field">
+    <label>NPSH available <span class="unit" id="cps-unit-NPSHa">ft</span></label>
+    <div class="sliderRow">
+      <input type="range" id="cps-NPSHa_slider" min="2" max="200" step="0.5" value="20">
+      <input type="number" id="cps-NPSHa" min="2" max="200" step="any" value="20">
+    </div>
+  </div>
+  <div class="field">
+    <label>Service category <span class="unit">(auto from conditions, slide 5 — overridable)</span></label>
+    <select id="cps-service"></select>
+  </div>
+  <div class="field">
+    <label>Shaft / suction configuration <span class="unit">(slide 7, 9–10)</span></label>
+    <select id="cps-config">
+      <option value="overhung" selected>Overhung (single-suction, end-suction) — rₛ=0 at eye</option>
+      <option value="between_bearings">Between-bearings (double-suction) — shaft passes through eye</option>
+    </select>
+  </div>
+  <div class="note" style="margin-top:4px; margin-bottom:0;">Collector type (volute, +vaned diffuser above ~150 ft/s tip speed) is determined by the workflow, not selected here — see the Collector panel below.</div>
+</div>
+
+<!-- ============================ OUTPUT PANEL ============================ -->
+<div id="cps-output">
+
+  <details class="resultPanel" id="cps-panel-datasheet" open>
+    <summary>Vendor documents</summary>
+    <div class="resultPanel-body">
+    <div class="note" style="margin-bottom:12px;">Downloads use this panel's most recently computed results (run the calculator with your duty conditions first).</div>
+    <button type="button" id="cps-btn-datasheet" style="padding:8px 16px; font-size:0.86rem; font-weight:600; color:#fff; background:var(--accent); border:none; border-radius:3px; cursor:pointer; margin-right:10px;">Download Pump Data Sheet (PDF)</button>
+    <a id="cps-link-slides" href="https://github.com/joshuasharpes84-rgb/process-engineering-decks/releases/download/decks-v1/Centrifugal-Pump-Sizing.pptx" style="display:inline-block; padding:8px 16px; font-size:0.86rem; font-weight:600; color:var(--accent-dark); background:var(--panel2); border:1px solid var(--border); border-radius:3px; text-decoration:none;">Download Slides (.pptx)</a>
+    <div class="s" id="cps-datasheet-status" style="margin-top:8px;"></div>
+    </div>
+  </details>
+
+  <details class="resultPanel" id="cps-panel-screening" open>
+    <summary>Screening — single-stage centrifugal (radial/mixed-flow) range</summary>
+    <div class="resultPanel-body">
+    <div id="cps-screeningBanners"></div>
+    <div class="grid3">
+      <div class="stat"><div class="v" id="cps-out_Ns"></div><div class="l">Specific speed, N<sub>s</sub> (US)</div><div class="s" id="cps-out_Ns_note"></div></div>
+      <div class="stat"><div class="v" id="cps-out_Omega"></div><div class="l">Dimensionless Ω<sub>s</sub></div><div class="s">Fig. 12 range: 0.2 – 1.6</div></div>
+      <div class="stat"><div class="v" id="cps-out_class"></div><div class="l">Impeller classification</div></div>
+    </div>
+    </div>
+  </details>
+
+  <details class="resultPanel" id="cps-panel-speed">
+    <summary>Speed, NPSH & cavitation <span class="slidetag">slides 3–7, Fig. 25</span></summary>
+    <div class="resultPanel-body">
+    <table><thead><tr><th>Poles</th><th class="num">N (rpm)</th><th class="num">N<sub>ss</sub></th><th>Status</th></tr></thead><tbody id="cps-speedTable"></tbody></table>
+    <div class="note" id="cps-speedTableNote" style="margin-top:6px; margin-bottom:0;"></div>
+    <div class="grid3" style="margin-top:8px;">
+      <div class="stat"><div class="v" id="cps-out_N"></div><div class="l">Selected N / U₂</div><div class="s" id="cps-out_U2_note"></div></div>
+      <div class="stat"><div class="v" id="cps-out_NPSHr"></div><div class="l">Required NPSH<sub>r</sub> (spec limit)</div></div>
+      <div class="stat"><div class="v" id="cps-out_Nss"></div><div class="l">N<sub>ss</sub> — <span id="cps-out_NssStatus"></span></div></div>
+    </div>
+    </div>
+  </details>
+
+  <details class="resultPanel" id="cps-panel-geometry" open>
+    <summary>Impeller & collector geometry <span class="slidetag">slides 7, 9–17</span></summary>
+    <div class="resultPanel-body">
+    <div class="grid3">
+      <div class="stat"><div class="v" id="cps-out_rs"></div><div class="l">Shaft radius r<sub>s</sub> (from torque)</div><div class="s" id="cps-out_rs_note"></div></div>
+      <div class="stat"><div class="v" id="cps-out_phiE"></div><div class="l">Eye flow coeff. φₑ</div><div class="s" id="cps-out_phiE_note"></div></div>
+      <div class="stat"><div class="v" id="cps-out_re"></div><div class="l">Eye diameter D<sub>e</sub></div><div class="s" id="cps-out_re_note"></div></div>
+      <div class="stat"><div class="v" id="cps-out_r2"></div><div class="l">Exit diameter D₂</div></div>
+      <div class="stat"><div class="v" id="cps-out_b2"></div><div class="l">Exit width b₂</div></div>
+      <div class="stat"><div class="v" id="cps-out_beta2"></div><div class="l">Blade angle β₂ᵦ</div><div class="s" id="cps-out_beta2_note"></div></div>
+      <div class="stat"><div class="v" id="cps-out_nb"></div><div class="l">Blade count n<sub>b</sub></div></div>
+      <div class="stat"><div class="v" id="cps-out_r3"></div><div class="l">Base circle D₃ / throat A<sub>t</sub></div><div class="s" id="cps-out_throat_note"></div></div>
+    </div>
+    <div class="note" id="cps-collectorNote" style="margin-top:10px; margin-bottom:0;"></div>
+    <div id="cps-diffuserExtra" style="margin-top:10px;"></div>
+    </div>
+  </details>
+
+  <details class="resultPanel" id="cps-panel-curve">
+    <summary>Predicted performance curve — trim-diameter family <span class="slidetag">slide 21</span></summary>
+    <div class="resultPanel-body">
+    <div class="note">Family generated via standard affinity-law scaling (Q∝D, H∝D²) of the sized (100%) curve — the same method vendor curve sheets use to show a trim range off one tested casing. Blade angle + BEP-locked slip velocity held fixed across flow; dashed segment near shutoff is interpolated, not modeled. Each trim is a scaled copy of the same underlying shape (affinity laws don't independently re-derive a curve per diameter), so all trims look near-linear together at low-to-mid Ωₛ — expected physics per Karassik (rise-to-shutoff curvature grows with specific speed; see the gap note below), not a rendering bug.</div>
+    <svg class="chart" id="cps-chartHQ" viewBox="0 0 640 320"></svg>
+    <svg class="chart" id="cps-chartBHP" viewBox="0 0 640 220" style="margin-top:12px;"></svg>
+    </div>
+  </details>
+
+  <details class="resultPanel" id="cps-panel-thrust">
+    <summary>Axial thrust & balancing <span class="slidetag">slides 24–25</span></summary>
+    <div class="resultPanel-body">
+    <div class="grid3">
+      <div class="stat"><div class="v" id="cps-out_thrust"></div><div class="l">Net axial thrust T (K=0.6 corrected)</div><div class="s" id="cps-out_thrust_naive"></div></div>
+      <div class="stat"><div class="v" id="cps-out_p2"></div><div class="l">Impeller-OD pressure p₂</div></div>
+      <div class="stat"><div class="v" id="cps-out_Hshutoff"></div><div class="l">Shutoff head (≈0.585·U₂²/g)</div></div>
+    </div>
+    <div class="mechbox" id="cps-mechBox" style="margin-top:12px;"></div>
+    </div>
+  </details>
+
+  <details class="resultPanel" id="cps-panel-final" open>
+    <summary>Final balanced performance</summary>
+    <div class="resultPanel-body">
+    <div class="grid3">
+      <div class="stat"><div class="v" id="cps-out_etaTotal_final"></div><div class="l">Overall η (balanced) — final</div></div>
+      <div class="stat"><div class="v" id="cps-out_bhp_final"></div><div class="l">BHP (balanced) — final</div></div>
+      <div class="stat"><div class="v" id="cps-out_bhp_delta"></div><div class="l">Δ vs. first pass</div></div>
+    </div>
+    <details style="margin-top:10px;">
+      <summary>First-pass numbers (pre-balancing) — reference only</summary>
+      <div class="grid3" style="margin-top:8px;">
+        <div class="stat"><div class="v" id="cps-out_etaHY"></div><div class="l">η<sub>HY</sub></div></div>
+        <div class="stat"><div class="v" id="cps-out_etam"></div><div class="l">η<sub>m</sub></div></div>
+        <div class="stat"><div class="v" id="cps-out_etav"></div><div class="l">η<sub>v</sub></div></div>
+        <div class="stat"><div class="v" id="cps-out_etaTotal"></div><div class="l">Overall η (first pass)</div></div>
+        <div class="stat"><div class="v" id="cps-out_bhp"></div><div class="l">BHP (first pass)</div></div>
+        <div class="stat"><div class="v" id="cps-out_bhpJekat"></div><div class="l">BHP cross-check (Jekat)</div></div>
+      </div>
+    </details>
+    </div>
+  </details>
+
+  <details class="resultPanel" id="cps-panel-assumptions">
+    <summary>Assumptions used & known gaps</summary>
+    <div class="resultPanel-body">
+    <details open><summary>Fixed internal constants (see sizing_tool_parameter_limits.md)</summary><div id="cps-assumeList"></div></details>
+    <details style="margin-top:8px;"><summary>Not implemented (deck doesn't yet give a closed form) — case-study findings</summary><div id="cps-gapList"></div></details>
+    </div>
+  </details>
+
+</div>
+</div>
+
+<footer>Self-contained: no external scripts, no CDN, no network calls. Fluid properties are a precomputed <code>thermo</code> lookup table baked in at build time. Formulas trace to slide numbers in <em>Centrifugal Pump Sizing.pptx</em>; where the deck only gives a chart/qualitative guidance, a documented approximation is used and flagged below. CFD verification (slides 22–23) is out of scope for a closed-form calculator. Q/H slider bounds and the two corner flags are an approximate reading of <code>Pump Selection Guidelines.png</code> (Fig. 10-24-style pump coverage chart), not a pixel digitization.</footer>
+
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script>
+(function(){
+
+// =====================================================================================
+// Precomputed thermo table: [T_F, SG, vapor_pressure_psia, viscosity_cP], 5 F steps, -40 to 400 F.
+// =====================================================================================
+const FLUID_TABLE = {"water": [[-40, 1.0, 0.00274, 7.0512], [-35, 1.0, 0.00364, 6.3139], [-30, 1.0, 0.00481, 5.6683], [-25, 1.0, 0.0063, 5.1014], [-20, 1.0, 0.00819, 4.6021], [-15, 1.0, 0.01059, 4.1614], [-10, 1.0, 0.01359, 3.7713], [-5, 1.0, 0.01734, 3.4252], [0, 1.0, 0.022, 3.1173], [5, 1.0, 0.02774, 2.8429], [10, 1.0, 0.03479, 2.5977], [15, 1.0, 0.04341, 2.3782], [20, 1.0, 0.05387, 2.1813], [25, 1.0, 0.06652, 2.0042], [30, 1.0, 0.08174, 1.8447], [35, 1.0, 0.09998, 1.6927], [40, 1.0, 0.12173, 1.5465], [45, 1.0, 0.14757, 1.4176], [50, 1.0, 0.17814, 1.3056], [55, 1.0, 0.21414, 1.2078], [60, 1.0, 0.2564, 1.1214], [65, 1.0, 0.3058, 1.0444], [70, 1.0, 0.36336, 0.9753], [75, 1.0, 0.43017, 0.9133], [80, 1.0, 0.50747, 0.8573], [85, 1.0, 0.5966, 0.8068], [90, 1.0, 0.69904, 0.7609], [95, 1.0, 0.81642, 0.7192], [100, 1.0, 0.95051, 0.6811], [105, 1.0, 1.10323, 0.6462], [110, 1.0, 1.27668, 0.614], [115, 1.0, 1.47313, 0.5844], [120, 1.0, 1.69503, 0.557], [125, 1.0, 1.94502, 0.5317], [130, 1.0, 2.22594, 0.5082], [135, 1.0, 2.54084, 0.4864], [140, 1.0, 2.89298, 0.4661], [145, 1.0, 3.28586, 0.4472], [150, 1.0, 3.72318, 0.4295], [155, 1.0, 4.20891, 0.413], [160, 1.0, 4.74723, 0.3976], [165, 1.0, 5.34261, 0.3831], [170, 1.0, 5.99976, 0.3694], [175, 1.0, 6.72364, 0.3566], [180, 1.0, 7.51951, 0.3445], [185, 1.0, 8.39289, 0.3331], [190, 1.0, 9.34958, 0.3224], [195, 1.0, 10.39567, 0.3122], [200, 1.0, 11.53755, 0.3026], [205, 1.0, 12.78189, 0.2935], [210, 1.0, 14.13566, 0.2849], [215, 1.0, 15.60615, 0.2767], [220, 1.0, 17.20094, 0.269], [225, 1.0, 18.92793, 0.2616], [230, 1.0, 20.79532, 0.2546], [235, 1.0, 22.81162, 0.248], [240, 1.0, 24.98569, 0.2416], [245, 1.0, 27.32666, 0.2355], [250, 1.0, 29.844, 0.2298], [255, 1.0, 32.5475, 0.2243], [260, 1.0, 35.44728, 0.219], [265, 1.0, 38.55374, 0.2139], [270, 1.0, 41.87765, 0.2091], [275, 1.0, 45.43007, 0.2045], [280, 1.0, 49.22237, 0.2], [285, 1.0, 53.26627, 0.1958], [290, 1.0, 57.57378, 0.1917], [295, 1.0, 62.15723, 0.1878], [300, 1.0, 67.02928, 0.1841], [305, 1.0, 72.20289, 0.1805], [310, 1.0, 77.69132, 0.177], [315, 1.0, 83.50817, 0.1737], [320, 1.0, 89.66732, 0.1704], [325, 1.0, 96.18296, 0.1673], [330, 1.0, 103.06961, 0.1643], [335, 1.0, 110.34205, 0.1615], [340, 1.0, 118.01539, 0.1587], [345, 1.0, 126.10502, 0.156], [350, 1.0, 134.62663, 0.1534], [355, 1.0, 143.59622, 0.1509], [360, 1.0, 153.03004, 0.1484], [365, 1.0, 162.94465, 0.1461], [370, 1.0, 173.35692, 0.1438], [375, 1.0, 184.28396, 0.1416], [380, 1.0, 195.74319, 0.1395], [385, 1.0, 207.75231, 0.1374], [390, 1.0, 220.32927, 0.1354], [395, 1.0, 233.49234, 0.1334], [400, 1.0, 247.26003, 0.1315]], "methanol": [[-40, 0.8545, 0.02915, 1.7774], [-35, 0.8518, 0.03723, 1.6687], [-30, 0.8491, 0.04727, 1.5689], [-25, 0.8464, 0.05965, 1.4771], [-20, 0.8437, 0.07484, 1.3926], [-15, 0.841, 0.09338, 1.3145], [-10, 0.8383, 0.11588, 1.2423], [-5, 0.8348, 0.14307, 1.1754], [0, 0.8307, 0.17575, 1.1134], [5, 0.8269, 0.21484, 1.0558], [10, 0.8234, 0.26141, 1.0023], [15, 0.82, 0.31663, 0.9524], [20, 0.8169, 0.38182, 0.9059], [25, 0.8138, 0.45849, 0.8625], [30, 0.811, 0.5483, 0.8219], [35, 0.8082, 0.65308, 0.7839], [40, 0.8056, 0.77489, 0.7483], [45, 0.8031, 0.91598, 0.7149], [50, 0.8006, 1.07884, 0.6836], [55, 0.7982, 1.2662, 0.6541], [60, 0.796, 1.48102, 0.6264], [65, 0.7937, 1.72657, 0.6004], [70, 0.7916, 2.00636, 0.5759], [75, 0.7895, 2.32423, 0.5528], [80, 0.7874, 2.68431, 0.531], [85, 0.7854, 3.09107, 0.5104], [90, 0.7835, 3.5493, 0.491], [95, 0.7816, 4.06415, 0.4726], [100, 0.7797, 4.64116, 0.4551], [105, 0.7779, 5.2862, 0.4386], [110, 0.7761, 6.00558, 0.4229], [115, 0.7743, 6.80597, 0.408], [120, 0.7725, 7.69448, 0.3939], [125, 0.7708, 8.67863, 0.3804], [130, 0.7691, 9.76637, 0.3676], [135, 0.7674, 10.9661, 0.3554], [140, 0.7657, 12.28663, 0.3438], [145, 0.764, 13.73728, 0.3327], [150, 0.7623, 15.32777, 0.3221], [155, 0.7607, 17.06835, 0.312], [160, 0.759, 18.96971, 0.3024], [165, 0.7574, 21.04304, 0.2932], [170, 0.7558, 23.30002, 0.2844], [175, 0.7542, 25.75284, 0.2759], [180, 0.7525, 28.41419, 0.2678], [185, 0.7509, 31.29726, 0.26], [190, 0.7492, 34.41575, 0.2525], [195, 0.7476, 37.78387, 0.2453], [200, 0.7459, 41.41633, 0.2384], [205, 0.7442, 45.32834, 0.2317], [210, 0.7425, 49.53561, 0.2253], [215, 0.7408, 54.05433, 0.219], [220, 0.7391, 58.9012, 0.2131], [225, 0.7373, 64.09342, 0.2073], [230, 0.7355, 69.64872, 0.2017], [235, 0.7337, 75.58534, 0.1963], [240, 0.7318, 81.92206, 0.1911], [245, 0.7299, 88.67825, 0.186], [250, 0.728, 95.87381, 0.1811], [255, 0.726, 103.52925, 0.1764], [260, 0.724, 111.66564, 0.1718], [265, 0.7219, 120.3046, 0.1673], [270, 0.7198, 129.46831, 0.1629], [275, 0.7176, 139.17945, 0.1586], [280, 0.7154, 149.4612, 0.1545], [285, 0.7131, 160.33723, 0.1505], [290, 0.7107, 171.83165, 0.1466], [295, 0.7082, 183.96909, 0.1427], [300, 0.7057, 196.77464, 0.139], [305, 0.7031, 210.27398, 0.1354], [310, 0.7004, 224.49333, 0.1318], [315, 0.6976, 239.45952, 0.1284], [320, 0.6947, 255.19992, 0.125], [325, 0.6917, 271.74236, 0.1217], [330, 0.6886, 289.11497, 0.1184], [335, 0.6853, 307.34587, 0.1152], [340, 0.6819, 326.46287, 0.1121], [345, 0.6784, 346.49308, 0.109], [350, 0.6747, 367.46258, 0.106], [355, 0.6708, 389.39624, 0.1031], [360, 0.6668, 412.31776, 0.1002], [365, 0.6625, 436.25005, 0.0973], [370, 0.658, 461.21609, 0.0946], [375, 0.6576, 487.24014, 0.0918], [380, 0.6599, 514.34938, 0.0891], [385, 0.6623, 542.57573, 0.0865], [390, 0.6648, 571.95757, 0.0839], [395, 0.6673, 602.54125, 0.0812], [400, 0.6699, 634.38194, 0.0787]], "ethanol": [[-40, 0.8471, 0.00807, 4.9824], [-35, 0.8447, 0.01062, 4.6062], [-30, 0.8423, 0.01387, 4.2645], [-25, 0.8399, 0.01799, 3.9536], [-20, 0.8375, 0.0232, 3.6705], [-15, 0.8351, 0.02971, 3.4122], [-10, 0.8327, 0.03783, 3.1761], [-5, 0.8295, 0.04789, 2.9601], [0, 0.8257, 0.06027, 2.7621], [5, 0.8222, 0.07544, 2.5804], [10, 0.8189, 0.09393, 2.4133], [15, 0.8158, 0.11635, 2.2594], [20, 0.8129, 0.14341, 2.1175], [25, 0.8102, 0.17591, 1.9866], [30, 0.8076, 0.21477, 1.8656], [35, 0.8051, 0.26103, 1.7537], [40, 0.8027, 0.31586, 1.6501], [45, 0.8004, 0.38058, 1.5541], [50, 0.7982, 0.45667, 1.4651], [55, 0.7961, 0.54578, 1.3826], [60, 0.794, 0.64975, 1.3059], [65, 0.792, 0.77063, 1.2346], [70, 0.7901, 0.91066, 1.1683], [75, 0.7882, 1.07234, 1.1065], [80, 0.7864, 1.2584, 1.0488], [85, 0.7846, 1.47181, 0.995], [90, 0.7829, 1.71584, 0.9446], [95, 0.7811, 1.99403, 0.8975], [100, 0.7795, 2.31022, 0.8534], [105, 0.7778, 2.66857, 0.812], [110, 0.7762, 3.07355, 0.7731], [115, 0.7746, 3.52998, 0.7367], [120, 0.7731, 4.04304, 0.7024], [125, 0.7715, 4.61826, 0.6702], [130, 0.77, 5.26157, 0.6399], [135, 0.7685, 5.97931, 0.6114], [140, 0.7669, 6.7782, 0.5845], [145, 0.7654, 7.66541, 0.5592], [150, 0.7639, 8.64854, 0.5353], [155, 0.7625, 9.73561, 0.5127], [160, 0.761, 10.9351, 0.4913], [165, 0.7595, 12.25593, 0.4711], [170, 0.758, 13.70746, 0.4519], [175, 0.7565, 15.29949, 0.4337], [180, 0.755, 17.04227, 0.4165], [185, 0.7535, 18.94648, 0.4001], [190, 0.7519, 21.02325, 0.3845], [195, 0.7504, 23.28416, 0.3697], [200, 0.7489, 25.74125, 0.3556], [205, 0.7473, 28.40703, 0.3422], [210, 0.7457, 31.29448, 0.3294], [215, 0.7441, 34.41707, 0.3172], [220, 0.7424, 37.78876, 0.3056], [225, 0.7407, 41.42397, 0.2944], [230, 0.739, 45.33759, 0.2838], [235, 0.7372, 49.54496, 0.2736], [240, 0.7354, 54.06179, 0.2639], [245, 0.7336, 58.90416, 0.2546], [250, 0.7317, 64.08845, 0.2456], [255, 0.7297, 69.63131, 0.237], [260, 0.7277, 75.54963, 0.2287], [265, 0.7257, 81.86053, 0.2207], [270, 0.7235, 88.58138, 0.213], [275, 0.7213, 95.72979, 0.2056], [280, 0.7191, 103.32371, 0.1985], [285, 0.7167, 111.38143, 0.1916], [290, 0.7143, 119.92166, 0.185], [295, 0.7118, 128.96352, 0.1786], [300, 0.7092, 138.52656, 0.1725], [305, 0.7066, 148.63069, 0.1666], [310, 0.7038, 159.29608, 0.161], [315, 0.701, 170.54302, 0.1555], [320, 0.698, 182.39181, 0.1502], [325, 0.695, 194.86259, 0.1451], [330, 0.6919, 207.97528, 0.1402], [335, 0.6886, 221.74962, 0.1354], [340, 0.6853, 236.20529, 0.1308], [345, 0.6818, 251.36216, 0.1263], [350, 0.6782, 267.24066, 0.122], [355, 0.6745, 283.86211, 0.1179], [360, 0.6706, 301.2491, 0.1139], [365, 0.6666, 319.42555, 0.1101], [370, 0.6625, 338.41661, 0.1064], [375, 0.6593, 358.24817, 0.1028], [380, 0.6617, 378.9462, 0.0993], [385, 0.6641, 400.53584, 0.0959], [390, 0.6665, 423.0408, 0.0926], [395, 0.669, 446.48327, 0.0894], [400, 0.6716, 470.88468, 0.0862]], "toluene": [[-40, 0.9298, 0.0061, 1.6001], [-35, 0.9272, 0.00786, 1.5028], [-30, 0.9246, 0.01005, 1.4149], [-25, 0.922, 0.01277, 1.3353], [-20, 0.9194, 0.01612, 1.2628], [-15, 0.9168, 0.02023, 1.1964], [-10, 0.9142, 0.02523, 1.1354], [-5, 0.9107, 0.03129, 1.0792], [0, 0.9065, 0.0386, 1.0271], [5, 0.9027, 0.04736, 0.9788], [10, 0.8991, 0.05781, 0.9339], [15, 0.8958, 0.07022, 0.8922], [20, 0.8926, 0.08489, 0.8534], [25, 0.8896, 0.10214, 0.8172], [30, 0.8867, 0.12236, 0.7835], [35, 0.884, 0.14595, 0.752], [40, 0.8814, 0.17336, 0.7226], [45, 0.8789, 0.20509, 0.6951], [50, 0.8765, 0.24168, 0.6693], [55, 0.8742, 0.28373, 0.645], [60, 0.872, 0.33188, 0.6222], [65, 0.8698, 0.38682, 0.6006], [70, 0.8677, 0.44931, 0.5802], [75, 0.8657, 0.52016, 0.5608], [80, 0.8637, 0.60025, 0.5424], [85, 0.8618, 0.69051, 0.5249], [90, 0.8599, 0.79194, 0.5082], [95, 0.8581, 0.9056, 0.4924], [100, 0.8563, 1.03263, 0.4773], [105, 0.8546, 1.17422, 0.463], [110, 0.8529, 1.33166, 0.4493], [115, 0.8513, 1.50626, 0.4363], [120, 0.8496, 1.69946, 0.424], [125, 0.8481, 1.91274, 0.4122], [130, 0.8465, 2.14766, 0.401], [135, 0.845, 2.40586, 0.3903], [140, 0.8435, 2.68903, 0.3801], [145, 0.842, 2.99897, 0.3703], [150, 0.8406, 3.33753, 0.3609], [155, 0.8392, 3.70665, 0.3519], [160, 0.8378, 4.10833, 0.3433], [165, 0.8364, 4.54466, 0.3349], [170, 0.8351, 5.0178, 0.3269], [175, 0.8337, 5.52996, 0.3191], [180, 0.8324, 6.08347, 0.3116], [185, 0.8311, 6.68068, 0.3044], [190, 0.8298, 7.32405, 0.2974], [195, 0.8286, 8.01609, 0.2906], [200, 0.8273, 8.75938, 0.2841], [205, 0.8261, 9.5566, 0.2778], [210, 0.8248, 10.41045, 0.2718], [215, 0.8236, 11.32372, 0.2659], [220, 0.8224, 12.29927, 0.2603], [225, 0.8212, 13.34002, 0.2549], [230, 0.82, 14.44894, 0.2497], [235, 0.8188, 15.62909, 0.2447], [240, 0.8177, 16.88355, 0.2398], [245, 0.8165, 18.2155, 0.2351], [250, 0.8154, 19.62816, 0.2306], [255, 0.8142, 21.1248, 0.2261], [260, 0.8131, 22.70875, 0.2218], [265, 0.812, 24.38341, 0.2175], [270, 0.8108, 26.15222, 0.2134], [275, 0.8097, 28.01866, 0.2094], [280, 0.8086, 29.98629, 0.2054], [285, 0.8075, 32.0587, 0.2016], [290, 0.8064, 34.23955, 0.1978], [295, 0.8052, 36.53251, 0.1942], [300, 0.8041, 38.94135, 0.1906], [305, 0.803, 41.46985, 0.1872], [310, 0.8019, 44.12185, 0.1838], [315, 0.8007, 46.90124, 0.1806], [320, 0.7996, 49.81195, 0.1774], [325, 0.7985, 52.85796, 0.1743], [330, 0.7973, 56.0433, 0.1713], [335, 0.7962, 59.37205, 0.1684], [340, 0.795, 62.84832, 0.1655], [345, 0.7939, 66.47628, 0.1627], [350, 0.7927, 70.26015, 0.1599], [355, 0.7915, 74.2042, 0.1571], [360, 0.7903, 78.31274, 0.1544], [365, 0.7891, 82.59013, 0.1517], [370, 0.7878, 87.0408, 0.149], [375, 0.7866, 91.66922, 0.1464], [380, 0.7853, 96.4799, 0.1438], [385, 0.784, 101.47745, 0.1413], [390, 0.7827, 106.66649, 0.1388], [395, 0.7813, 112.05174, 0.1364], [400, 0.78, 117.63796, 0.134]], "benzene": [[-40, 0.9012, 0.03606, 1.7158], [-35, 0.9012, 0.04462, 1.6259], [-30, 0.9012, 0.05495, 1.5426], [-25, 0.9012, 0.06734, 1.4654], [-20, 0.9012, 0.08215, 1.3936], [-15, 0.9012, 0.09977, 1.3269], [-10, 0.9012, 0.12064, 1.2647], [-5, 0.9002, 0.14528, 1.2068], [0, 0.8987, 0.17423, 1.1526], [5, 0.8974, 0.20815, 1.102], [10, 0.8964, 0.24772, 1.0546], [15, 0.8957, 0.29374, 1.0102], [20, 0.8951, 0.34707, 0.9685], [25, 0.8946, 0.40868, 0.9294], [30, 0.8943, 0.47962, 0.8926], [35, 0.8942, 0.56105, 0.8579], [40, 0.8942, 0.65425, 0.8252], [45, 0.8925, 0.76053, 0.7915], [50, 0.8897, 0.88098, 0.7551], [55, 0.8871, 1.017, 0.7226], [60, 0.8845, 1.17011, 0.6927], [65, 0.882, 1.34194, 0.6644], [70, 0.8796, 1.53423, 0.6377], [75, 0.8773, 1.74878, 0.6128], [80, 0.875, 1.98752, 0.5897], [85, 0.8727, 2.25249, 0.5682], [90, 0.8705, 2.54579, 0.5479], [95, 0.8683, 2.86967, 0.5287], [100, 0.8662, 3.22644, 0.5105], [105, 0.8642, 3.61855, 0.4931], [110, 0.8621, 4.04853, 0.4767], [115, 0.8601, 4.519, 0.4611], [120, 0.8581, 5.03271, 0.4464], [125, 0.8562, 5.59249, 0.4325], [130, 0.8543, 6.20127, 0.4193], [135, 0.8524, 6.86207, 0.4067], [140, 0.8505, 7.57803, 0.3946], [145, 0.8487, 8.35235, 0.383], [150, 0.8468, 9.18835, 0.3718], [155, 0.845, 10.08943, 0.3611], [160, 0.8432, 11.05907, 0.3508], [165, 0.8415, 12.10085, 0.341], [170, 0.8397, 13.21843, 0.3316], [175, 0.8379, 14.41554, 0.3227], [180, 0.8362, 15.69602, 0.3141], [185, 0.8345, 17.06374, 0.3058], [190, 0.8328, 18.5227, 0.2979], [195, 0.8311, 20.07694, 0.2902], [200, 0.8295, 21.73058, 0.2828], [205, 0.8278, 23.4878, 0.2756], [210, 0.8261, 25.35288, 0.2686], [215, 0.8245, 27.33012, 0.2619], [220, 0.8228, 29.42391, 0.2554], [225, 0.8212, 31.63869, 0.2491], [230, 0.8195, 33.97899, 0.2431], [235, 0.8179, 36.44935, 0.2373], [240, 0.8162, 39.05441, 0.2316], [245, 0.8146, 41.79884, 0.2262], [250, 0.813, 44.68736, 0.2209], [255, 0.8113, 47.72476, 0.2157], [260, 0.8096, 50.91588, 0.2107], [265, 0.808, 54.2656, 0.2058], [270, 0.8063, 57.77884, 0.2011], [275, 0.8047, 61.46059, 0.1964], [280, 0.803, 65.31588, 0.1919], [285, 0.8013, 69.34978, 0.1876], [290, 0.7996, 73.56741, 0.1833], [295, 0.7979, 77.97393, 0.1792], [300, 0.7962, 82.57458, 0.1753], [305, 0.7945, 87.3746, 0.1714], [310, 0.7927, 92.37931, 0.1676], [315, 0.7909, 97.59407, 0.164], [320, 0.7892, 103.02429, 0.1604], [325, 0.7874, 108.67542, 0.1568], [330, 0.7855, 114.55299, 0.1534], [335, 0.7837, 120.66255, 0.15], [340, 0.7818, 127.00972, 0.1467], [345, 0.7799, 133.60017, 0.1434], [350, 0.778, 140.43965, 0.1403], [355, 0.776, 147.53394, 0.1372], [360, 0.774, 154.88892, 0.1343], [365, 0.772, 162.51052, 0.1314], [370, 0.7699, 170.40477, 0.1285], [375, 0.7678, 178.57774, 0.1258], [380, 0.7656, 187.03564, 0.123], [385, 0.7634, 195.78472, 0.1203], [390, 0.7612, 204.83135, 0.1177], [395, 0.7588, 214.182, 0.1151], [400, 0.7564, 223.84326, 0.1125]], "hexane": [[-40, 0.7174, 0.0658, 0.6457], [-35, 0.715, 0.08148, 0.6201], [-30, 0.7127, 0.10032, 0.596], [-25, 0.7103, 0.1228, 0.5734], [-20, 0.7079, 0.14952, 0.552], [-15, 0.7055, 0.18108, 0.5318], [-10, 0.7031, 0.21821, 0.5127], [-5, 0.6999, 0.26167, 0.4946], [0, 0.6963, 0.31232, 0.4776], [5, 0.6929, 0.37108, 0.4614], [10, 0.6897, 0.43897, 0.4462], [15, 0.6867, 0.51709, 0.4318], [20, 0.6838, 0.60665, 0.418], [25, 0.6811, 0.70892, 0.405], [30, 0.6784, 0.82529, 0.3926], [35, 0.6759, 0.95724, 0.3806], [40, 0.6734, 1.10636, 0.3692], [45, 0.671, 1.27435, 0.3583], [50, 0.6686, 1.46298, 0.3478], [55, 0.6664, 1.67417, 0.3378], [60, 0.6641, 1.90991, 0.3281], [65, 0.662, 2.17234, 0.3189], [70, 0.6598, 2.46367, 0.31], [75, 0.6577, 2.78624, 0.3016], [80, 0.6557, 3.14249, 0.2934], [85, 0.6536, 3.53499, 0.2857], [90, 0.6516, 3.96639, 0.2782], [95, 0.6496, 4.43947, 0.271], [100, 0.6477, 4.95711, 0.264], [105, 0.6458, 5.52231, 0.2573], [110, 0.6438, 6.13814, 0.2508], [115, 0.6419, 6.80782, 0.2444], [120, 0.6401, 7.53463, 0.2383], [125, 0.6382, 8.32199, 0.2324], [130, 0.6363, 9.17339, 0.2266], [135, 0.6345, 10.09244, 0.2211], [140, 0.6326, 11.08282, 0.2157], [145, 0.6308, 12.14832, 0.2105], [150, 0.6289, 13.29282, 0.2055], [155, 0.6271, 14.5203, 0.2006], [160, 0.6253, 15.8348, 0.1959], [165, 0.6235, 17.24048, 0.1914], [170, 0.6217, 18.74156, 0.1871], [175, 0.6198, 20.34235, 0.1828], [180, 0.618, 22.04724, 0.1787], [185, 0.6162, 23.86069, 0.1746], [190, 0.6144, 25.78727, 0.1707], [195, 0.6125, 27.83157, 0.1668], [200, 0.6107, 29.99831, 0.1631], [205, 0.6088, 32.29225, 0.1594], [210, 0.607, 34.71823, 0.1558], [215, 0.6051, 37.28116, 0.1524], [220, 0.6032, 39.98601, 0.149], [225, 0.6012, 42.83785, 0.1457], [230, 0.5993, 45.84178, 0.1425], [235, 0.5973, 49.00301, 0.1394], [240, 0.5953, 52.32679, 0.1364], [245, 0.5933, 55.81845, 0.1334], [250, 0.5913, 59.4834, 0.1305], [255, 0.5892, 63.32713, 0.1277], [260, 0.5871, 67.35518, 0.1249], [265, 0.5849, 71.57319, 0.1221], [270, 0.5827, 75.98686, 0.1194], [275, 0.5805, 80.602, 0.1167], [280, 0.5782, 85.42448, 0.1141], [285, 0.5759, 90.46028, 0.1116], [290, 0.5736, 95.71546, 0.1091], [295, 0.5711, 101.1962, 0.1066], [300, 0.5687, 106.90878, 0.1042], [305, 0.5661, 112.85959, 0.1019], [310, 0.5635, 119.05514, 0.0996], [315, 0.5608, 125.50206, 0.0974], [320, 0.558, 132.20711, 0.0952], [325, 0.5552, 139.17719, 0.0929], [330, 0.5522, 146.41932, 0.0907], [335, 0.5492, 153.94065, 0.0885], [340, 0.546, 161.74851, 0.0864], [345, 0.5427, 169.85038, 0.0842], [350, 0.5393, 178.25393, 0.0821], [355, 0.5358, 186.96704, 0.08], [360, 0.532, 195.99785, 0.078], [365, 0.5305, 205.3548, 0.076], [370, 0.5323, 215.04664, 0.074], [375, 0.5342, 225.08252, 0.072], [380, 0.5361, 235.47201, 0.07], [385, 0.538, 246.22513, 0.068], [390, 0.54, 257.35246, 0.0659], [395, 0.5421, 268.86521, 0.0638], [400, 0.5441, 280.77533, 0.0617]], "acetone": [[-40, 0.8617, 0.10468, 0.6691], [-35, 0.8587, 0.12922, 0.6428], [-30, 0.8558, 0.1586, 0.6182], [-25, 0.8528, 0.1936, 0.5951], [-20, 0.8498, 0.23507, 0.5733], [-15, 0.8469, 0.28396, 0.5527], [-10, 0.8439, 0.34135, 0.5333], [-5, 0.84, 0.40838, 0.5149], [0, 0.8356, 0.48635, 0.4976], [5, 0.8315, 0.57665, 0.4813], [10, 0.8276, 0.68081, 0.4658], [15, 0.8238, 0.80048, 0.4512], [20, 0.8203, 0.93747, 0.4373], [25, 0.8169, 1.0937, 0.4241], [30, 0.8136, 1.27124, 0.4115], [35, 0.8105, 1.47233, 0.3995], [40, 0.8074, 1.69935, 0.3879], [45, 0.8045, 1.95481, 0.3768], [50, 0.8016, 2.24143, 0.3662], [55, 0.7988, 2.56204, 0.356], [60, 0.796, 2.91967, 0.3462], [65, 0.7933, 3.31749, 0.3369], [70, 0.7907, 3.75884, 0.3279], [75, 0.7881, 4.24724, 0.3193], [80, 0.7856, 4.78636, 0.311], [85, 0.783, 5.38005, 0.3031], [90, 0.7806, 6.03231, 0.2955], [95, 0.7781, 6.74733, 0.2882], [100, 0.7757, 7.52943, 0.2811], [105, 0.7733, 8.38314, 0.2743], [110, 0.7709, 9.3131, 0.2676], [115, 0.7686, 10.32417, 0.2612], [120, 0.7662, 11.42132, 0.255], [125, 0.7639, 12.60969, 0.249], [130, 0.7616, 13.8946, 0.2432], [135, 0.7593, 15.28149, 0.2375], [140, 0.757, 16.77596, 0.2321], [145, 0.7547, 18.38377, 0.2269], [150, 0.7525, 20.11082, 0.2219], [155, 0.7502, 21.96315, 0.217], [160, 0.7479, 23.94694, 0.2123], [165, 0.7457, 26.06852, 0.2078], [170, 0.7434, 28.33434, 0.2034], [175, 0.7411, 30.751, 0.1991], [180, 0.7389, 33.32522, 0.195], [185, 0.7366, 36.06386, 0.1909], [190, 0.7343, 38.97391, 0.187], [195, 0.732, 42.06248, 0.1831], [200, 0.7296, 45.33681, 0.1793], [205, 0.7273, 48.80427, 0.1756], [210, 0.7249, 52.47233, 0.1721], [215, 0.7226, 56.34861, 0.1686], [220, 0.7202, 60.44086, 0.1652], [225, 0.7177, 64.75691, 0.162], [230, 0.7153, 69.30477, 0.1588], [235, 0.7128, 74.09253, 0.1557], [240, 0.7103, 79.12844, 0.1528], [245, 0.7077, 84.42085, 0.1499], [250, 0.7051, 89.97827, 0.147], [255, 0.7025, 95.80932, 0.1442], [260, 0.6998, 101.92276, 0.1415], [265, 0.6971, 108.3275, 0.1387], [270, 0.6944, 115.03258, 0.1361], [275, 0.6915, 122.04719, 0.1335], [280, 0.6887, 129.38067, 0.1309], [285, 0.6857, 137.04254, 0.1284], [290, 0.6827, 145.04246, 0.1259], [295, 0.6797, 153.39028, 0.1236], [300, 0.6765, 162.09603, 0.1212], [305, 0.6733, 171.16995, 0.119], [310, 0.67, 180.62249, 0.1168], [315, 0.6666, 190.4643, 0.1146], [320, 0.6632, 200.70629, 0.1124], [325, 0.6596, 211.35961, 0.1103], [330, 0.6559, 222.43568, 0.1081], [335, 0.6521, 233.9462, 0.106], [340, 0.6481, 245.90316, 0.1039], [345, 0.6441, 258.31892, 0.1018], [350, 0.6398, 271.20616, 0.0997], [355, 0.6355, 284.57799, 0.0977], [360, 0.6309, 298.44795, 0.0957], [365, 0.6283, 312.8301, 0.0938], [370, 0.6305, 327.73901, 0.0919], [375, 0.6327, 343.1899, 0.09], [380, 0.635, 359.19862, 0.0881], [385, 0.6373, 375.78177, 0.0861], [390, 0.6397, 392.95672, 0.084], [395, 0.6421, 410.74177, 0.082], [400, 0.6445, 429.15626, 0.0799]], "MEK": [[-40, 0.8744, 0.02947, 0.9287], [-35, 0.8716, 0.03687, 0.8887], [-30, 0.8687, 0.04588, 0.8511], [-25, 0.8659, 0.05682, 0.8158], [-20, 0.8631, 0.07002, 0.7825], [-15, 0.8602, 0.08588, 0.7512], [-10, 0.8574, 0.10486, 0.7216], [-5, 0.8536, 0.12747, 0.6937], [0, 0.8493, 0.1543, 0.6673], [5, 0.8452, 0.18594, 0.6424], [10, 0.8414, 0.22303, 0.6187], [15, 0.8377, 0.26634, 0.5963], [20, 0.8343, 0.3167, 0.5751], [25, 0.831, 0.37502, 0.555], [30, 0.8278, 0.4423, 0.5358], [35, 0.8247, 0.51964, 0.5176], [40, 0.8217, 0.6082, 0.5003], [45, 0.8188, 0.70928, 0.4838], [50, 0.816, 0.82426, 0.4681], [55, 0.8133, 0.95461, 0.4532], [60, 0.8106, 1.10193, 0.4389], [65, 0.808, 1.26793, 0.4253], [70, 0.8054, 1.45442, 0.4123], [75, 0.8029, 1.66334, 0.3999], [80, 0.8004, 1.89674, 0.388], [85, 0.798, 2.15679, 0.3766], [90, 0.7956, 2.44578, 0.3657], [95, 0.7932, 2.76614, 0.3553], [100, 0.7909, 3.1204, 0.3453], [105, 0.7886, 3.51124, 0.3357], [110, 0.7863, 3.94144, 0.3265], [115, 0.784, 4.41393, 0.3177], [120, 0.7818, 4.93175, 0.3092], [125, 0.7796, 5.49807, 0.301], [130, 0.7774, 6.1162, 0.2932], [135, 0.7752, 6.78954, 0.2857], [140, 0.773, 7.52164, 0.2784], [145, 0.7708, 8.31617, 0.2714], [150, 0.7687, 9.17692, 0.2647], [155, 0.7665, 10.1078, 0.2582], [160, 0.7644, 11.11282, 0.2519], [165, 0.7623, 12.19613, 0.2459], [170, 0.7601, 13.36198, 0.2401], [175, 0.758, 14.61474, 0.2345], [180, 0.7559, 15.95888, 0.2291], [185, 0.7538, 17.39899, 0.2239], [190, 0.7516, 18.93977, 0.2188], [195, 0.7495, 20.58599, 0.214], [200, 0.7474, 22.34257, 0.2093], [205, 0.7453, 24.21449, 0.2047], [210, 0.7431, 26.20685, 0.2003], [215, 0.741, 28.32484, 0.196], [220, 0.7389, 30.57375, 0.1919], [225, 0.7367, 32.95895, 0.1879], [230, 0.7345, 35.48592, 0.1841], [235, 0.7323, 38.16022, 0.1803], [240, 0.7301, 40.98749, 0.1767], [245, 0.7279, 43.97348, 0.1731], [250, 0.7257, 47.12402, 0.1697], [255, 0.7234, 50.44502, 0.1664], [260, 0.7212, 53.9425, 0.1632], [265, 0.7189, 57.62255, 0.1601], [270, 0.7166, 61.49135, 0.157], [275, 0.7142, 65.55517, 0.1541], [280, 0.7119, 69.8204, 0.1512], [285, 0.7095, 74.29349, 0.1484], [290, 0.7071, 78.981, 0.1457], [295, 0.7046, 83.88959, 0.1431], [300, 0.7021, 89.02603, 0.1405], [305, 0.6996, 94.39716, 0.138], [310, 0.697, 100.00998, 0.1356], [315, 0.6944, 105.87158, 0.1332], [320, 0.6918, 111.98915, 0.131], [325, 0.6891, 118.37004, 0.1287], [330, 0.6863, 125.02172, 0.1265], [335, 0.6835, 131.95178, 0.1244], [340, 0.6807, 139.16798, 0.1223], [345, 0.6777, 146.67823, 0.1203], [350, 0.6747, 154.49059, 0.1184], [355, 0.6717, 162.61331, 0.1165], [360, 0.6685, 171.05481, 0.1146], [365, 0.6653, 179.82372, 0.1128], [370, 0.662, 188.92887, 0.111], [375, 0.6586, 198.37933, 0.1093], [380, 0.6551, 208.1844, 0.1076], [385, 0.6515, 218.35364, 0.1059], [390, 0.6478, 228.89688, 0.1043], [395, 0.6439, 239.82427, 0.1027], [400, 0.6399, 251.14626, 0.1012]], "ethylene glycol": [[-40, 1.1452, 0.0, 38558.2326], [-35, 1.1452, 0.0, 21865.0019], [-30, 1.1452, 0.0, 12563.6497], [-25, 1.1452, 0.0, 7311.6963], [-20, 1.1452, 0.0, 4307.9199], [-15, 1.1452, 1e-05, 2568.5255], [-10, 1.1452, 1e-05, 1549.1539], [-5, 1.144, 1e-05, 944.7892], [0, 1.142, 2e-05, 582.4348], [5, 1.1404, 3e-05, 362.8114], [10, 1.1389, 4e-05, 228.4618], [15, 1.136, 5e-05, 153.8792], [20, 1.1332, 7e-05, 112.2665], [25, 1.1308, 9e-05, 86.4691], [30, 1.1284, 0.00013, 69.0679], [35, 1.1263, 0.00018, 56.5593], [40, 1.1243, 0.00024, 47.1519], [45, 1.1224, 0.00031, 39.8541], [50, 1.1207, 0.00042, 34.0697], [55, 1.1191, 0.00055, 29.4107], [60, 1.1176, 0.00072, 25.6081], [65, 1.1162, 0.00094, 22.4671], [70, 1.1149, 0.00122, 19.843], [75, 1.1136, 0.00157, 17.6271], [80, 1.1125, 0.00201, 15.7373], [85, 1.1114, 0.00256, 14.1113], [90, 1.1104, 0.00325, 12.7018], [95, 1.1094, 0.0041, 11.4725], [100, 1.1086, 0.00514, 10.3952], [105, 1.1077, 0.00643, 9.4475], [110, 1.107, 0.00799, 8.611], [115, 1.1063, 0.0099, 7.8707], [120, 1.1056, 0.01221, 7.2137], [125, 1.1051, 0.015, 6.6292], [130, 1.1045, 0.01834, 6.1076], [135, 1.104, 0.02235, 5.6406], [140, 1.1036, 0.02712, 5.2213], [145, 1.1032, 0.03279, 4.8434], [150, 1.1028, 0.0395, 4.5018], [155, 1.1025, 0.04741, 4.1921], [160, 1.1022, 0.05671, 3.9103], [165, 1.1019, 0.0676, 3.6535], [170, 1.1017, 0.08032, 3.4188], [175, 1.1016, 0.09513, 3.2041], [180, 1.1015, 0.11232, 3.0072], [185, 1.1014, 0.1322, 2.8267], [190, 1.1013, 0.15514, 2.6608], [195, 1.1013, 0.18154, 2.5083], [200, 1.1013, 0.21182, 2.368], [205, 1.1013, 0.24648, 2.2388], [210, 1.1014, 0.28602, 2.1196], [215, 1.1015, 0.33104, 2.0095], [220, 1.1017, 0.38216, 1.9076], [225, 1.1018, 0.44006, 1.8131], [230, 1.102, 0.5055, 1.7253], [235, 1.1023, 0.57928, 1.6436], [240, 1.1025, 0.66227, 1.5674], [245, 1.1028, 0.75543, 1.4962], [250, 1.1031, 0.85976, 1.4295], [255, 1.1035, 0.97638, 1.3669], [260, 1.1039, 1.10644, 1.3081], [265, 1.1043, 1.25123, 1.2529], [270, 1.1047, 1.41208, 1.2009], [275, 1.1052, 1.59044, 1.1519], [280, 1.1057, 1.78784, 1.1058], [285, 1.1062, 2.00592, 1.0623], [290, 1.1067, 2.24641, 1.0213], [295, 1.1073, 2.51116, 0.9827], [300, 1.1079, 2.80213, 0.9462], [305, 1.1086, 3.12136, 0.9117], [310, 1.1093, 3.47104, 0.8792], [315, 1.11, 3.85347, 0.8483], [320, 1.1107, 4.27106, 0.8191], [325, 1.1115, 4.72636, 0.7914], [330, 1.1123, 5.22204, 0.765], [335, 1.1131, 5.76088, 0.7399], [340, 1.1139, 6.34583, 0.716], [345, 1.1148, 6.97995, 0.6931], [350, 1.1158, 7.66643, 0.6712], [355, 1.1167, 8.40863, 0.6502], [360, 1.1177, 9.21003, 0.63], [365, 1.1187, 10.07425, 0.6107], [370, 1.1198, 11.00506, 0.5922], [375, 1.1209, 12.00639, 0.5744], [380, 1.1221, 13.08229, 0.5573], [385, 1.1232, 14.237, 0.5409], [390, 1.1245, 15.47487, 0.5252], [395, 1.1257, 16.80044, 0.5102], [400, 1.127, 18.21837, 0.4957]], "ammonia": [[-40, 0.6952, 10.38952, 0.2787], [-35, 0.6918, 12.03281, 0.2669], [-30, 0.6884, 13.88169, 0.2559], [-25, 0.685, 15.95463, 0.2457], [-20, 0.6815, 18.27099, 0.2361], [-15, 0.678, 20.85105, 0.2271], [-10, 0.6745, 23.71596, 0.2187], [-5, 0.6702, 26.88776, 0.2109], [0, 0.6655, 30.38935, 0.2035], [5, 0.661, 34.24449, 0.1965], [10, 0.6566, 38.47777, 0.1899], [15, 0.6524, 43.11457, 0.1837], [20, 0.6483, 48.1811, 0.1778], [25, 0.6442, 53.70434, 0.1721], [30, 0.6403, 59.71203, 0.1668], [35, 0.6364, 66.23265, 0.1618], [40, 0.6326, 73.29541, 0.157], [45, 0.6287, 80.93024, 0.1525], [50, 0.625, 89.16774, 0.1481], [55, 0.6212, 98.03921, 0.1439], [60, 0.6175, 107.57658, 0.1398], [65, 0.6137, 117.81246, 0.136], [70, 0.61, 128.78006, 0.1322], [75, 0.6062, 140.51323, 0.1286], [80, 0.6025, 153.04643, 0.1252], [85, 0.5987, 166.4147, 0.1219], [90, 0.5949, 180.65369, 0.1187], [95, 0.5911, 195.79966, 0.1156], [100, 0.5873, 211.88942, 0.1126], [105, 0.5834, 228.9604, 0.1096], [110, 0.5794, 247.05058, 0.1067], [115, 0.5755, 266.19858, 0.1039], [120, 0.5714, 286.44359, 0.1012], [125, 0.5673, 307.82543, 0.0985], [130, 0.5632, 330.38457, 0.096], [135, 0.5589, 354.16214, 0.0934], [140, 0.5546, 379.19996, 0.091], [145, 0.5502, 405.54059, 0.0885], [150, 0.5457, 433.22734, 0.0862], [155, 0.5411, 462.30436, 0.0838], [160, 0.5364, 492.81668, 0.0815], [165, 0.5316, 524.81027, 0.0792], [170, 0.5266, 558.33218, 0.0769], [175, 0.5214, 593.43059, 0.0747], [180, 0.5161, 630.15498, 0.0726], [185, 0.5106, 668.55625, 0.0704], [190, 0.5049, 708.6869, 0.0683], [195, 0.499, 750.60118, 0.0662], [200, 0.4967, 794.35538, 0.0641], [205, 0.4977, 840.0081, 0.062], [210, 0.4987, 887.62066, 0.0599], [215, 0.4997, 937.25755, 0.0578], [220, 0.5008, 988.9871, 0.0558], [225, 0.5019, 1042.88216, 0.0537], [230, 0.503, 1099.02109, 0.0516], [235, 0.5041, 1157.48916, 0.0494], [240, 0.5053, 1218.38057, 0.0472], [245, 0.5064, 1281.80182, 0.0451], [250, 0.5076, 1347.87677, 0.0428], [255, 0.5089, 1416.75491, 0.0402], [260, 0.5101, 1488.62718, 0.0375], [265, 0.5114, 1563.76521, 0.0343], [270, 0.5127, 1642.63431, 0.0281], [275, 0.514, 1726.01369, 0.0193], [280, 0.5154, 1814.36711, 0.0132], [285, 0.5167, 1907.99385, 0.01], [290, 0.5181, 2007.21158, 0.01], [295, 0.5195, 2112.35752, 0.01], [300, 0.521, 2223.78964, 0.01], [305, 0.5225, 2341.8879, 0.01], [310, 0.524, 2467.05557, 0.01], [315, 0.5255, 2599.72063, 0.01], [320, 0.5271, 2740.33725, 0.01], [325, 0.5287, 2889.38737, 0.01], [330, 0.5303, 3047.38239, 0.01], [335, 0.5319, 3214.86487, 0.01], [340, 0.5336, 3392.41048, 0.01], [345, 0.5353, 3580.62991, 0.01], [350, 0.5371, 3780.17098, 0.01], [355, 0.5389, 3991.7209, 0.01], [360, 0.5407, 4216.00855, 0.01], [365, 0.5425, 4453.80701, 0.01], [370, 0.5444, 4705.93616, 0.01], [375, 0.5463, 4973.26548, 0.01], [380, 0.5483, 5256.71698, 0.01], [385, 0.5503, 5557.2683, 0.01], [390, 0.5523, 5875.95601, 0.01], [395, 0.5544, 6213.87911, 0.01], [400, 0.5565, 6572.20267, 0.01]], "propane": [[-40, 0.583, 16.11685, 0.1918], [-35, 0.5797, 18.14373, 0.186], [-30, 0.5764, 20.36264, 0.1804], [-25, 0.5731, 22.7854, 0.1751], [-20, 0.5698, 25.42407, 0.1699], [-15, 0.5664, 28.29101, 0.1649], [-10, 0.563, 31.3988, 0.1602], [-5, 0.5589, 34.76023, 0.1555], [0, 0.5545, 38.38832, 0.1511], [5, 0.5502, 42.29629, 0.1468], [10, 0.5461, 46.49752, 0.1426], [15, 0.542, 51.00556, 0.1386], [20, 0.538, 55.83417, 0.1347], [25, 0.5341, 60.99724, 0.1309], [30, 0.5302, 66.50891, 0.1272], [35, 0.5264, 72.38345, 0.1237], [40, 0.5225, 78.6354, 0.1202], [45, 0.5187, 85.27945, 0.1168], [50, 0.5149, 92.33049, 0.1135], [55, 0.511, 99.80358, 0.1103], [60, 0.5072, 107.71393, 0.1072], [65, 0.5033, 116.07686, 0.1042], [70, 0.4994, 124.90783, 0.1012], [75, 0.4954, 134.22248, 0.0983], [80, 0.4914, 144.03661, 0.0955], [85, 0.4873, 154.36632, 0.0927], [90, 0.4832, 165.22804, 0.09], [95, 0.479, 176.6386, 0.0873], [100, 0.4746, 188.61526, 0.0847], [105, 0.4702, 201.17572, 0.0821], [110, 0.4657, 214.33803, 0.0796], [115, 0.4611, 228.1206, 0.0771], [120, 0.4563, 242.54211, 0.0746], [125, 0.4513, 257.62163, 0.0722], [130, 0.4462, 273.37877, 0.0698], [135, 0.4408, 289.83401, 0.0674], [140, 0.4358, 307.00907, 0.0651], [145, 0.4365, 324.92725, 0.0627], [150, 0.4372, 343.61354, 0.0604], [155, 0.4378, 363.09445, 0.0581], [160, 0.4386, 383.39768, 0.0558], [165, 0.4393, 404.55194, 0.0534], [170, 0.44, 426.58752, 0.051], [175, 0.4408, 449.53832, 0.0486], [180, 0.4416, 473.44514, 0.0461], [185, 0.4424, 498.35878, 0.0435], [190, 0.4432, 524.34033, 0.0406], [195, 0.4441, 551.45864, 0.0375], [200, 0.445, 579.80256, 0.0338], [205, 0.4459, 609.58237, 0.0289], [210, 0.4468, 641.40194, 0.023], [215, 0.4477, 675.71615, 0.0184], [220, 0.4487, 712.71851, 0.0147], [225, 0.4496, 752.61672, 0.0118], [230, 0.4506, 795.63662, 0.01], [235, 0.4516, 842.02369, 0.01], [240, 0.4527, 892.0447, 0.01], [245, 0.4537, 945.98956, 0.01], [250, 0.4548, 1004.17326, 0.01], [255, 0.4559, 1066.93805, 0.01], [260, 0.457, 1134.6558, 0.01], [265, 0.4582, 1207.73051, 0.01], [270, 0.4593, 1286.60115, 0.01], [275, 0.4605, 1371.7447, 0.01], [280, 0.4617, 1463.67939, 0.01], [285, 0.463, 1562.96839, 0.01], [290, 0.4642, 1670.22365, 0.01], [295, 0.4655, 1786.11023, 0.01], [300, 0.4668, 1911.3509, 0.01], [305, 0.4681, 2046.73123, 0.01], [310, 0.4695, 2193.10508, 0.01], [315, 0.4708, 2351.40059, 0.01], [320, 0.4722, 2522.62671, 0.01], [325, 0.4737, 2707.8803, 0.01], [330, 0.4751, 2908.35383, 0.01], [335, 0.4766, 3125.34384, 0.01], [340, 0.4781, 3360.26003, 0.01], [345, 0.4796, 3614.63525, 0.01], [350, 0.4812, 3890.13631, 0.01], [355, 0.4828, 4188.5758, 0.01], [360, 0.4844, 4511.92488, 0.01], [365, 0.4861, 4862.32727, 0.01], [370, 0.4878, 5242.11438, 0.01], [375, 0.4895, 5653.82185, 0.01], [380, 0.4912, 6100.20755, 0.01], [385, 0.493, 6584.27104, 0.01], [390, 0.4949, 7109.27489, 0.01], [395, 0.4967, 7678.76776, 0.01], [400, 0.4986, 8296.60955, 0.01]], "sulfuric acid": [[-40, 1.8335, 0.0, 321.9897], [-35, 1.8335, 0.0, 277.3471], [-30, 1.8335, 0.0, 239.7252], [-25, 1.8335, 0.0, 207.9029], [-20, 1.8335, 0.0, 180.8898], [-15, 1.8335, 0.0, 157.8799], [-10, 1.8335, 0.0, 138.2146], [-5, 1.8335, 0.0, 121.3532], [0, 1.8335, 0.0, 106.8509], [5, 1.8335, 0.0, 94.3397], [10, 1.8335, 0.0, 83.5145], [15, 1.8335, 0.0, 74.1216], [20, 1.8335, 0.0, 65.949], [25, 1.8335, 0.0, 58.8191], [30, 1.8335, 0.0, 52.5827], [35, 1.8335, 0.0, 47.1142], [40, 1.8335, 0.0, 42.3073], [45, 1.8335, 0.0, 38.0719], [50, 1.8335, 0.0, 34.3315], [55, 1.8335, 0.0, 31.0208], [60, 1.8335, 0.0, 28.0842], [65, 1.8335, 0.0, 25.4738], [70, 1.8335, 1e-06, 23.1486], [75, 1.8335, 1e-06, 21.0733], [80, 1.8335, 1e-06, 19.2175], [85, 1.8335, 2e-06, 17.5549], [90, 1.8335, 2e-06, 16.0625], [95, 1.8335, 3e-06, 14.7205], [100, 1.8335, 4e-06, 13.5117], [105, 1.8335, 6e-06, 12.421], [110, 1.8335, 8e-06, 11.4352], [115, 1.8335, 1e-05, 10.5428], [120, 1.8335, 1.4e-05, 9.7337], [125, 1.8335, 1.8e-05, 8.999], [130, 1.8335, 2.4e-05, 8.3308], [135, 1.8335, 3.2e-05, 7.7222], [140, 1.8335, 4.2e-05, 7.1672], [145, 1.8335, 5.4e-05, 6.6602], [150, 1.8336, 6.9e-05, 6.1966], [155, 1.8336, 8.9e-05, 5.772], [160, 1.8336, 0.000114, 5.3827], [165, 1.8336, 0.000145, 5.0252], [170, 1.8336, 0.000183, 4.6966], [175, 1.8336, 0.000231, 4.3942], [180, 1.8336, 0.00029, 4.1155], [185, 1.8336, 0.000362, 3.8584], [190, 1.8336, 0.000451, 3.621], [195, 1.8336, 0.000559, 3.4015], [200, 1.8336, 0.000691, 3.1983], [205, 1.8336, 0.00085, 3.01], [210, 1.8336, 0.001041, 2.8354], [215, 1.8336, 0.001271, 2.6733], [220, 1.8336, 0.001547, 2.5227], [225, 1.8336, 0.001876, 2.3825], [230, 1.8336, 0.002268, 2.252], [235, 1.8336, 0.002732, 2.1304], [240, 1.8336, 0.00328, 2.0169], [245, 1.8336, 0.003927, 1.911], [250, 1.8336, 0.004686, 1.812], [255, 1.8336, 0.005575, 1.7194], [260, 1.8336, 0.006614, 1.6328], [265, 1.8336, 0.007824, 1.5516], [270, 1.8336, 0.009229, 1.4755], [275, 1.8336, 0.010857, 1.404], [280, 1.8336, 0.012738, 1.337], [285, 1.8336, 0.014906, 1.2739], [290, 1.8336, 0.017398, 1.2147], [295, 1.8336, 0.020257, 1.1589], [300, 1.8336, 0.023527, 1.1063], [305, 1.8336, 0.027261, 1.0568], [310, 1.8336, 0.031512, 1.0101], [315, 1.8336, 0.036344, 0.966], [320, 1.8336, 0.041822, 0.9244], [325, 1.8336, 0.048021, 0.8851], [330, 1.8336, 0.05502, 0.8479], [335, 1.8336, 0.062906, 0.8127], [340, 1.8336, 0.071775, 0.7794], [345, 1.8336, 0.08173, 0.7478], [350, 1.8336, 0.092881, 0.7179], [355, 1.8336, 0.10535, 0.6895], [360, 1.8336, 0.119267, 0.6626], [365, 1.8336, 0.134771, 0.637], [370, 1.8336, 0.152015, 0.6128], [375, 1.8336, 0.171159, 0.5897], [380, 1.8336, 0.192378, 0.5677], [385, 1.8336, 0.215858, 0.5468], [390, 1.8336, 0.241797, 0.5269], [395, 1.8336, 0.270409, 0.508], [400, 1.8336, 0.301919, 0.4899]]};
+
+const SERVICE_CATS = [
+  ['Clean cold water, non-critical (1.1–1.2×)', 1.15],
+  ['Hydrocarbons / hot water near boiling (1.2–1.3×)', 1.25],
+  ['Viscous fluids (1.3–1.5×)', 1.4],
+  ['Slurries, erosive service (1.5–2.0×)', 1.75],
+  ['Critical service, no spare (2.0×)', 2.0],
+];
+const VISC_SERVICE_CP = 30;      // above this, auto-select "Viscous fluids"
+const HOT_SERVICE_VP_PSIA = 10;  // vapor pressure this close to atmospheric -> "hot water near boiling"
+
+function deriveServiceCategory(fluidName, visc_cP, solids, vp_psia){
+  if(solids) return 3;
+  if(visc_cP > VISC_SERVICE_CP) return 2;
+  if(vp_psia > HOT_SERVICE_VP_PSIA || fluidName !== 'water') return 1;
+  return 0;
+}
+
+// ---- fixed internal constants (see sizing_tool_parameter_limits.md) ----
+const EPS=0.85, DELTA_RR=0.0015, ETA_I=0.925, ZETA_C=0.25,
+      P2_FRAC=0.775, GAP_B_FRAC=0.06, NSS_WARN=8500, NSS_BAD=12000, U2_WARN_FTS=250,
+      VISC_WARN_CP=300, THRUST_K=0.6, FREQ_HZ=60, DIFFUSER_U2_THRESHOLD_FTS=150;
+// ---- shaft (slide 9/10, Eq. 49/50) constants ----
+const SS_ALLOW_PSI=6000, KEYWAY_FACTOR=1.15, ANDERSON_X=1.0;   // Step 5: shaft torque/stress
+const K1_TAU=1.69, K2_TAU=0.102, PHI_E_CAP=0.30, RS_RE_SEED=0.40;  // Step 6: Table 1a (Gongwer) + Eq.50
+// Shape-of-curve shock/incidence loss (slide 21's own eq (c) names this loss but gives no k --
+// functional form is Stepanoff (1957) / Conrad et al., via Perissinotto et al. 2024 eqs 13-14;
+// K_SHO itself is NOT from any of those sources (they call it impeller-specific / needs cascade
+// data) -- it's derived here by requiring the shock-augmented curve's Q=0 value to land on this
+// tool's own already-implemented Stepanoff shutoff head (line ~488). See sizing_tool_parameter_limits.md.
+const K_SHO = 1.0;
+const BETA_PRIMARY=[15,35], BETA_FALLBACK=[10,60];
+const TRIM_FRACTIONS=[0.80,0.85,0.90,0.95,1.00];
+const CORNER_LOWQ_HIGHH = {Q:50, H:500};
+const CORNER_HIGHQ_LOWH = {Q:3000, H:30};
+
+const G_SI=9.80665, FT_PER_M=3.280839895, M_PER_FT=1/FT_PER_M, GPM_TO_M3S=6.30902e-5,
+      LBF_PER_N=0.2248089, HP_PER_W=1/745.699872, PA_PER_PSI=6894.76, NS_CONVERSION=2733;
+
+function fmt(x,d=2){ return Number(x).toLocaleString(undefined,{maximumFractionDigits:d,minimumFractionDigits:0}); }
+function val(id){ return parseFloat(document.getElementById('cps-'+id).value); }
+
+// =====================================================================================
+// Unit system (display layer only). The calc engine (sizePump/interpFluid) always works in
+// US-customary internally, unchanged -- valUS() converts a currently-displayed input value
+// back to US before it reaches the calc engine; fmtU() converts a US-native result value to
+// whatever system is active for display. Nothing about the physics/formulas changes with this.
+// =====================================================================================
+let UNIT_SYS = 'us';   // 'us' | 'si'
+function usToSi(kind, v){
+  switch(kind){
+    case 'flow': return v*0.2271247;      // gpm -> m3/h
+    case 'len_ft': return v*0.3048;       // ft -> m
+    case 'len_in': return v*25.4;         // in -> mm
+    case 'area_in2': return v*645.16;     // in2 -> mm2
+    case 'vel': return v*0.3048;          // ft/s -> m/s
+    case 'press': return v*6.894757;      // psi(a) -> kPa
+    case 'power': return v*0.7456999;     // hp -> kW
+    case 'force': return v*4.448222;      // lbf -> N
+    case 'temp': return (v-32)/1.8;       // degF -> degC (affine)
+    default: return v;
+  }
+}
+function siToUs(kind, v){
+  switch(kind){
+    case 'flow': return v/0.2271247;
+    case 'len_ft': return v/0.3048;
+    case 'len_in': return v/25.4;
+    case 'area_in2': return v/645.16;
+    case 'vel': return v/0.3048;
+    case 'press': return v/6.894757;
+    case 'power': return v/0.7456999;
+    case 'force': return v/4.448222;
+    case 'temp': return v*1.8+32;
+    default: return v;
+  }
+}
+const UNIT_LABEL = {
+  flow:{us:'gpm',si:'m³/h'}, len_ft:{us:'ft',si:'m'}, len_in:{us:'in',si:'mm'},
+  area_in2:{us:'in²',si:'mm²'}, vel:{us:'ft/s',si:'m/s'}, press:{us:'psi',si:'kPa'},
+  power:{us:'hp',si:'kW'}, force:{us:'lbf',si:'N'}, temp:{us:'°F',si:'°C'},
+};
+function fmtU(usValue, kind, decUS=2, decSI){
+  if(usValue==null || !isFinite(usValue)) return '—';
+  if(UNIT_SYS==='us') return fmt(usValue, decUS)+' '+UNIT_LABEL[kind].us;
+  return fmt(usToSi(kind, usValue), decSI!=null?decSI:decUS)+' '+UNIT_LABEL[kind].si;
+}
+// valUS: read a bounded input's CURRENT displayed value and convert to US-customary for the calc engine.
+function valUS(id, kind){
+  const raw = val(id);
+  return UNIT_SYS==='si' ? siToUs(kind, raw) : raw;
+}
+const INPUT_UNIT_KIND = { Q:'flow', H:'len_ft', NPSHa:'len_ft', T:'temp', vp:'press' };
+const INPUT_US_BOUNDS = { Q:{min:10,max:10000}, H:{min:15,max:1000}, NPSHa:{min:2,max:200}, T:{min:-40,max:400} };
+function setUnitSystem(newSys){
+  if(newSys===UNIT_SYS) return;
+  const oldSys = UNIT_SYS;
+  Object.keys(INPUT_UNIT_KIND).forEach(id=>{
+    const kind = INPUT_UNIT_KIND[id];
+    const numEl = document.getElementById('cps-'+id);
+    const sliderEl = document.getElementById('cps-'+id+'_slider');
+    const convert = v => oldSys==='us' ? usToSi(kind,v) : siToUs(kind,v);
+    const newVal = Math.round(convert(parseFloat(numEl.value))*1000)/1000;
+    numEl.value = newVal;
+    if(sliderEl) sliderEl.value = newVal;
+    const b = INPUT_US_BOUNDS[id];
+    if(b){
+      const newMin = newSys==='us' ? b.min : Math.round(usToSi(kind,b.min)*1000)/1000;
+      const newMax = newSys==='us' ? b.max : Math.round(usToSi(kind,b.max)*1000)/1000;
+      [numEl, sliderEl].forEach(el=>{ if(el){ el.min=newMin; el.max=newMax; } });
+    }
+    const lbl = document.getElementById('cps-unit-'+id);
+    if(lbl) lbl.textContent = (id==='vp' ? UNIT_LABEL.press[newSys]+' (auto)' : UNIT_LABEL[kind][newSys]);
+  });
+  UNIT_SYS = newSys;
+  scheduleRun();
+}
+
+function bladeCountHeuristic(o){ if(o<0.6) return 7; if(o<1.0) return 6; if(o<1.6) return 5; return 4; }
+
+function interpFluid(name, T_F){
+  const rows = FLUID_TABLE[name];
+  if(!rows) return null;
+  if(T_F <= rows[0][0]) return {SG:rows[0][1], vp_psia:rows[0][2], visc_cP:rows[0][3]};
+  if(T_F >= rows[rows.length-1][0]) { const r=rows[rows.length-1]; return {SG:r[1], vp_psia:r[2], visc_cP:r[3]}; }
+  for(let i=0;i<rows.length-1;i++){
+    const [t0,sg0,vp0,mu0]=rows[i], [t1,sg1,vp1,mu1]=rows[i+1];
+    if(T_F>=t0 && T_F<=t1){
+      const f=(T_F-t0)/(t1-t0);
+      return {SG: sg0+f*(sg1-sg0), vp_psia: vp0+f*(vp1-vp0), visc_cP: mu0+f*(mu1-mu0)};
+    }
+  }
+  return null;
+}
+
+// =====================================================================================
+// Core sizing engine
+// =====================================================================================
+function sizePump(Q_gpm, H_ft, SG, visc_cP, NPSHa_ft, marginRatio, solids, config){
+  const gaps=[], banners=[];
+  const Q_si=Q_gpm*GPM_TO_M3S, H_si=H_ft*M_PER_FT, rho=SG*998.2, nu_si=(visc_cP/SG)*1e-6;
+  const NPSHr_ft = NPSHa_ft/marginRatio;
+
+  if(Q_gpm<CORNER_LOWQ_HIGHH.Q && H_ft>CORNER_LOWQ_HIGHH.H){
+    banners.push(['bad', `Q=${fmt(Q_gpm,0)} gpm + H=${fmt(H_ft,0)} ft is a low-flow/high-head corner that, per Fig. 10-24-style pump coverage charts, typically belongs to metering plunger/diaphragm pumps, not centrifugal. Cross-check Pump Selection Guidelines.png before proceeding.`]);
+  }
+  if(Q_gpm>CORNER_HIGHQ_LOWH.Q && H_ft<CORNER_HIGHQ_LOWH.H){
+    banners.push(['bad', `Q=${fmt(Q_gpm,0)} gpm + H=${fmt(H_ft,0)} ft is a high-flow/low-head corner that, per Fig. 10-24-style pump coverage charts, typically belongs to axial-flow pumps, not radial/mixed-flow centrifugal. Cross-check Pump Selection Guidelines.png before proceeding.`]);
+  }
+
+  // ---- Steps 1 & 3 (slides 4, 6-7): drop-speed cascade -- remedy 1 of slide 7's four.
+  // Accepts the fastest of the 4 standard speeds whose Nss falls in the Fig. 25 acceptable band
+  // (<=NSS_BAD, slide 7); Nss above the softer NSS_WARN target is still accepted but flagged.
+  const speedRows=[]; let selectedPoles=null, selectedN=null;
+  for(const poles of [2,4,6,8]){
+    const N=(FREQ_HZ*120)/poles;
+    const Nss=N*Math.sqrt(Q_gpm)/Math.pow(NPSHr_ft,0.75);
+    let status='ok'; if(Nss>NSS_BAD) status='bad'; else if(Nss>NSS_WARN) status='warn';
+    speedRows.push({poles,N,Nss,status});
+    if(selectedN===null && Nss<=NSS_BAD){selectedPoles=poles; selectedN=N;}
+  }
+  if(selectedN===null){
+    selectedPoles=8; selectedN=(FREQ_HZ*120)/8;
+    banners.push(['bad', `No pole count keeps Nss within the Fig. 25 acceptable band (<=${fmt(NSS_BAD,0)}) at NPSHr=${fmt(NPSHr_ft,1)} ft, even at the slowest standard speed (${fmt(selectedN,0)} rpm, remedy 1 of slide 7 exhausted).`]);
+  }
+  const N_rpm=selectedN, Omega_rad=N_rpm*2*Math.PI/60;
+  const Nss_sel = N_rpm*Math.sqrt(Q_gpm)/Math.pow(NPSHr_ft,0.75);
+  let nssStatus='ok'; if(Nss_sel>NSS_BAD) nssStatus='bad'; else if(Nss_sel>NSS_WARN) nssStatus='warn';
+
+  const Omega_s = Omega_rad*Math.sqrt(Q_si)/Math.pow(G_SI*H_si,0.75);
+  const Ns_us = NS_CONVERSION*Omega_s;
+  let classification='Radial / mixed-flow (Fig. 12 range)', classStatus='ok';
+  if(Omega_s>1.6){
+    classification='Axial-flow / propeller territory'; classStatus='bad';
+    banners.push(['bad', `Omega_s=${fmt(Omega_s,2)} > 1.6 (Ns~${fmt(Ns_us,0)}) -- outside Fig. 12 fit; axial tip-radius branch (slide 11) not implemented.`]);
+    gaps.push('Axial-flow/propeller sizing (psi_t=0.53/sigma, slide 11) -- not implemented.');
+  } else if(Omega_s<0.2){
+    classification='Below Fig. 12 range'; classStatus='bad';
+    banners.push(['bad', `Omega_s=${fmt(Omega_s,2)} < 0.2 (Ns~${fmt(Ns_us,0)}) -- unusually steep head/flow for a single stage; consider multistage or PD instead.`]);
+  } else {
+    banners.push(['ok', `Omega_s=${fmt(Omega_s,2)} (Ns~${fmt(Ns_us,0)}) inside Fig. 12 range.`]);
+  }
+  if(visc_cP>VISC_WARN_CP){
+    banners.push(['warn', `Viscosity ${fmt(visc_cP,0)} cP exceeds ${VISC_WARN_CP} cP caution -- no HI viscosity correction applied.`]);
+    gaps.push('Viscosity correction (Hydraulic Institute charts) -- not implemented.');
+  }
+  if(solids) banners.push(['warn', 'Suspended solids flagged -- wear-ring/erosion derating not automatic; review slide 10 + MOC project manually.']);
+
+  const psi_target = 0.383/Math.pow(Omega_s,1/3);
+  const r2_si = (1/Omega_rad)*Math.sqrt(G_SI*H_si/psi_target);
+  const U2 = Omega_rad*r2_si;
+  const U2_fts = U2*FT_PER_M;
+  const phi_exit = 0.1715*Math.sqrt(Omega_s);
+  const b2_over_r2 = Math.pow(Omega_s*psi_target,1.5)/(0.343*Math.PI*EPS);
+  const b2_si = b2_over_r2*r2_si;
+  if(U2_fts>U2_WARN_FTS) banners.push(['warn', `Tip speed U2=${fmt(U2_fts,0)} ft/s exceeds ${U2_WARN_FTS} ft/s caution proxy -- generic stress proxy, not a real stress calc.`]);
+
+  // ---- Step 5 (slide 9/10): size the shaft from torque BEFORE the eye ----
+  const P_hyd = rho*G_SI*Q_si*H_si;
+  const eta_p_shaft = Math.min(Math.max(
+    0.94 - 0.08955*Math.pow(Q_gpm/(N_rpm*ANDERSON_X),0.21333) - 0.29*Math.pow(Math.log10(2286.0/Ns_us),2),
+    0.30), 0.92);
+  const M_shaft = P_hyd/eta_p_shaft/Omega_rad;
+  const rs_si = Math.pow(16*M_shaft/(Math.PI*SS_ALLOW_PSI*PA_PER_PSI), 1/3) * Math.pow(KEYWAY_FACTOR, 1/3);
+
+  // ---- Step 6 (slide 10): eye radius. rs blocks the eye ONLY for between-bearings configs
+  // (double-suction / shaft-through); a single-suction overhung impeller has a clear eye (rs_eye=0).
+  const rsEye_si = (config === 'between_bearings') ? rs_si : 0.0;
+  const omegaSsReq = Nss_sel / NS_CONVERSION;
+
+  function tauGongwer(phi_e){ return (K1_TAU+K2_TAU)*phi_e*phi_e + K2_TAU; }
+  function omegaSsAchievable(phi_e, B){ return Math.sqrt(Math.PI*phi_e*B) / Math.pow(tauGongwer(phi_e)/2, 0.75); }
+  function solvePhiE(reqSs, B){
+    let phiPk=0.02, omegaPk=-Infinity;
+    const N=600;
+    for(let i=0;i<=N;i++){
+      const p = 0.02 + (0.60-0.02)*i/N;
+      const o = omegaSsAchievable(p, B);
+      if(o>omegaPk){ omegaPk=o; phiPk=p; }
+    }
+    if(omegaSsAchievable(PHI_E_CAP,B) >= reqSs) return {phi_e:PHI_E_CAP, mode:'φₑ capped at 0.30 (NPSH-generous; eye set by the cap, per slide 10)'};
+    if(reqSs > omegaPk) return {phi_e:null, mode:`INDUCER: required suction-specific speed (${fmt(reqSs,2)}) exceeds what any impeller eye can carry (peak ${fmt(omegaPk,2)})`};
+    let lo=phiPk, hi=PHI_E_CAP;
+    for(let it=0; it<80; it++){
+      const mid=(lo+hi)/2;
+      if(omegaSsAchievable(mid,B) - reqSs > 0) hi=mid; else lo=mid;
+    }
+    return {phi_e:(lo+hi)/2, mode:'φₑ back-solved from Eq. 50 (suction-limited)'};
+  }
+  function solveRe(phi_e, rsE){
+    // Eq.49 cubic re^3 - rsE^2*re - C = 0, C = Q/(pi*Omega*phi_e); monotonic increasing for re>=rsE
+    const C = Q_si/(Math.PI*Omega_rad*phi_e);
+    const f = (re)=> re*re*re - rsE*rsE*re - C;
+    let lo=rsE, hi=Math.max(rsE,0.01)*2;
+    while(f(hi) < 0) hi *= 2;
+    for(let it=0; it<80; it++){
+      const mid=(lo+hi)/2;
+      if(f(mid) > 0) hi=mid; else lo=mid;
+    }
+    return (lo+hi)/2;
+  }
+
+  let ratio = (rsEye_si===0) ? 0 : RS_RE_SEED, phiE=null, eyeMode='', re_si=null;
+  for(let it=0; it<20; it++){
+    const B = 1 - ratio*ratio;
+    const sol = solvePhiE(omegaSsReq, B);
+    phiE = sol.phi_e; eyeMode = sol.mode;
+    if(phiE===null) break;
+    re_si = solveRe(phiE, rsEye_si);
+    const newRatio = rsEye_si===0 ? 0 : rsEye_si/re_si;
+    if(Math.abs(newRatio-ratio) < 1e-4){ ratio=newRatio; break; }
+    ratio = newRatio;
+  }
+  let eyeFlag='OK';
+  if(phiE===null){
+    eyeFlag = 'Inducer sizing required';
+    banners.push(['bad', `Inducer sizing required (slide 7 remedy 2): ${eyeMode}. This deck doesn't give the blade-angle data (Table 1b) needed to size an inducer, so it isn't implemented here -- if an inducer isn't practical, slide 7 remedy 4 is increasing NPSHa upstream (a process-side change, outside this tool's scope).`]);
+    gaps.push('Inducer sizing (Table 1b, needs a blade angle this deck omits) -- not implemented; geometry below this point uses a φₑ=0.30 placeholder and is not meaningful for this case.');
+    phiE = PHI_E_CAP;
+    re_si = solveRe(phiE, rsEye_si);
+  } else if(rsEye_si>0 && !(ratio>=0.30 && ratio<=0.50)){
+    eyeFlag = `rₛ/rₑ = ${fmt(ratio,2)} outside the 0.30-0.50 iteration-seed band`;
+    banners.push(['warn', `Eye radius (slide 10): ${eyeFlag}`]);
+  } else if(phiE<0.15){
+    eyeFlag = `φₑ = ${fmt(phiE,2)} < 0.15 -- re-check with inducer τ`;
+    banners.push(['warn', `Eye radius (slide 10): ${eyeFlag}`]);
+  } else if(phiE<0.20){
+    eyeFlag = `φₑ = ${fmt(phiE,2)} < 0.20 -- inducer borderline`;
+    banners.push(['warn', `Eye radius (slide 10): ${eyeFlag}`]);
+  }
+  const Ae_si = Math.PI*(re_si*re_si-rsEye_si*rsEye_si);
+  gaps.push('Hub/shroud profile (slide 13) is qualitative only in the deck -- not computed here.');
+
+  const nb = bladeCountHeuristic(Omega_s);
+  function psiRealPredicted(beta_deg, phi_ex){
+    const b=beta_deg*Math.PI/180;
+    const psi_i_inf = 1-phi_ex/Math.tan(b);
+    const mu = Math.sqrt(Math.sin(b))/Math.pow(nb,0.7);
+    const psi_i = psi_i_inf-mu;
+    if(psi_i<=0) return {psi_real:-1, psi_i, mu};
+    const etaHY = ETA_I - ZETA_C*(psi_i/2 + (phi_ex*phi_ex)/(2*psi_i));
+    return {psi_real: etaHY*psi_i, psi_i, etaHY, mu};
+  }
+  function bisect(lo, hi){
+    let beta=(lo+hi)/2, last=null;
+    for(let it=0; it<60; it++){
+      beta=(lo+hi)/2;
+      const r=psiRealPredicted(beta, phi_exit);
+      last={beta, ...r};
+      if(r.psi_real<0){ lo=beta; continue; }
+      if(Math.abs(r.psi_real-psi_target)<1e-6) break;
+      if(r.psi_real<psi_target) lo=beta; else hi=beta;
+    }
+    return last;
+  }
+  let sol = bisect(...BETA_PRIMARY);
+  let relErr = sol.psi_real>0 ? Math.abs(sol.psi_real-psi_target)/psi_target : 1.0;
+  let usedFallback=false;
+  if(relErr>0.01){
+    usedFallback=true;
+    sol = bisect(...BETA_FALLBACK);
+    relErr = sol.psi_real>0 ? Math.abs(sol.psi_real-psi_target)/psi_target : 1.0;
+    gaps.push(`Blade angle needed the fallback range [${BETA_FALLBACK}] (outside the [${BETA_PRIMARY}] standard backward-curved range) to approach target psi=${fmt(psi_target,3)} (best achieved psi=${fmt(sol.psi_real,3)}, ${fmt(relErr*100,1)}% off at beta2b=${fmt(sol.beta,1)} deg). Near-radial blade angles are a known driver of flat/unstable H-Q curves -- treat this case as a real methodology-boundary finding, not a converged result.`);
+  }
+  let {beta:beta2b, psi_i, etaHY:etaHY_detailed, mu:mu_slip} = sol;
+  if(!(etaHY_detailed>=0.05 && etaHY_detailed<=0.98)){
+    gaps.push(`eta_HY (detailed) computed as ${fmt(etaHY_detailed,3)}, outside a physically sane [0.05,0.98] range -- clamped. This case pushed the eta_I/zeta_c model past where it's trustworthy; treat downstream numbers as illustrative only.`);
+    etaHY_detailed = Math.min(Math.max(etaHY_detailed,0.05),0.98);
+  }
+
+  const etaHY_jekat = 1 - 0.8/Math.pow(Q_gpm,0.25);
+  const Re_disk = Omega_rad*r2_si*r2_si/nu_si;
+  const Cm = 0.085/Math.pow(Re_disk,0.2);
+  const P_df = Cm*rho*Math.pow(Omega_rad,3)*Math.pow(r2_si,5)/2;
+  const etam_first = 1/(1+P_df/P_hyd);
+  const leakageTerm = 5*(DELTA_RR*Math.pow(re_si/r2_si,2)/(Omega_s*Omega_s*psi_target));
+  const etav_first = 1/(1+leakageTerm);
+  const etaTotal_first = etaHY_detailed*etam_first*etav_first;
+  const bhp_first = (P_hyd/etaTotal_first)*HP_PER_W;
+  const bhp_jekat = (P_hyd/(etaHY_jekat*etam_first*etav_first))*HP_PER_W;
+
+  const Hshutoff_ft = 0.585*U2*U2/G_SI*FT_PER_M;
+  gaps.push("Shutoff head uses Stepanoff's psi_s/o~0.585 shortcut, not the full k_imp/k_ex formula (slide 21) -- needs hub-inlet tip speed not resolved here. (This shortcut is now also the calibration anchor for the shock-loss curvature term below.)");
+  gaps.push('Shutoff power / non-overload BHP (Mockridge correlation, Fig. 23, slide 21) -- chart-only, not implemented.');
+  gaps.push("Minimum continuous stable flow (Fraser's Q_SR/Q_DR, slide 24) -- correlation cited, not its equation; not implemented.");
+  gaps.push('Suction/discharge nozzle sizing (velocity-based) -- not covered anywhere in the deck.');
+
+  // ---- collector: volute always present; vaned diffuser ADDED (not chosen) above the U2 threshold ----
+  const diffuserAdded = U2_fts > DIFFUSER_U2_THRESHOLD_FTS;
+  // Separate, better-sourced check: Cooper/HI "high energy" boundary (dP/stage vs Omega_s), Fig. 32,
+  // Karassik Pump Handbook 4th ed. p.2.73 / HI 1.1-1.2 2000 / Gulich. This does NOT answer the
+  // volute-vs-diffuser question directly (it's calibrated to multistage high-pressure pumps and
+  // essentially never fires within this tool's single-stage slider range) -- kept as an independent
+  // informational flag, not a substitute for DIFFUSER_U2_THRESHOLD_FTS above.
+  const dP_stage_psi = H_ft*SG/2.31;
+  const highEnergyBoundary_psi = 78.72/(Omega_s*Omega_s);
+  if(dP_stage_psi > highEnergyBoundary_psi){
+    banners.push(['warn', `Stage pressure rise (${fmt(dP_stage_psi,0)} psi) exceeds the Cooper/HI "high energy" boundary (${fmt(highEnergyBoundary_psi,0)} psi at this Omega_s) -- Fig. 32, Karassik 4th ed. p.2.73 / HI 1.1-1.2 2000. Recommend full stress/modal analysis and close attention to rotor-stator interaction, not just standard sizing.`]);
+  }
+  const Vu2 = psi_i*U2;
+  const r3_si = r2_si*(1+GAP_B_FRAC);
+  const kThroat = diffuserAdded ? 0.8 : 0.925;
+  const rt_si = r3_si;
+  const Vt = kThroat*r2_si*Vu2/rt_si;
+  const At_si = Q_si/Vt;
+  gaps.push('Collector throat radius r_t approximated as base-circle r_3 (placeholder) -- real value needs the volute spiral construction (r*Vu=const, slide 16), no closed form.');
+  gaps.push(`Diffuser-add threshold (U2 > ${DIFFUSER_U2_THRESHOLD_FTS} ft/s) is this tool's own judgment call -- slide 15's "common w/ higher impeller speeds" is qualitative, not numeric.`);
+
+  const D2=2*r2_si, De=2*re_si, DR=De;
+  const p2_pa = P2_FRAC*rho*G_SI*H_si;
+  const Vz1 = Q_si/Ae_si;
+  const momentum_N = rho*Q_si*Vz1;
+  const thrust_N_naive = (Math.PI/4)*(D2*D2-DR*DR)*p2_pa - momentum_N;
+  const thrust_N = thrust_N_naive*THRUST_K;
+  const thrust_lbf = thrust_N*LBF_PER_N;
+  gaps.push(`Axial thrust applies empirical K=${THRUST_K} correction (${fmt(thrust_N_naive*LBF_PER_N,0)} lbf raw -> ${fmt(thrust_lbf,0)} lbf corrected) -- slide 24 formula built without OCR access to the actual source Table 5; verify before trusting precisely.`);
+
+  let mechanism, mechDesc, etam_final=etam_first, etav_final=etav_first;
+  if(thrust_lbf>800){
+    mechanism='Balancing holes + rear wear ring, AND pump-out vanes';
+    mechDesc='High thrust -- slide 25 "high-energy" combination.';
+    etav_final = 1/(1+2*leakageTerm);
+    etam_final = 1/(1+2*P_df/P_hyd);
+  } else if(thrust_lbf>200){
+    mechanism='Balancing holes + rear wear ring';
+    mechDesc='Moderate thrust -- simpler/cheaper mechanism sufficient.';
+    etav_final = 1/(1+2*leakageTerm);
+  } else {
+    mechanism='None required (verify bearing capacity)';
+    mechDesc='Low thrust -- check standard thrust-bearing capacity before adding balancing.';
+  }
+  const etaTotal_final = etaHY_detailed*etam_final*etav_final;
+  const bhp_final = (P_hyd/etaTotal_final)*HP_PER_W;
+  gaps.push('Balancing-mechanism thresholds (200/800 lbf) and the eta_v/eta_m correction factors applied after selection are this tool\'s own approximation of the reiteration slide 25 implies -- not a cited rule.');
+
+  const VsAbs_BEP = mu_slip*U2;
+  const betaRad = beta2b*Math.PI/180;
+  const Ue = Omega_rad*re_si;   // eye tip speed -- the "omega*r1" velocity scale in the shock-loss term
+  function curvePointAt(f){
+    const Qp_si = Q_gpm*f*GPM_TO_M3S;
+    const Vm2p = Qp_si/(2*Math.PI*r2_si*b2_si*EPS);
+    const phiP = Vm2p/U2;
+    const Vu2infP = U2 - Vm2p/Math.tan(betaRad);
+    const Vu2P = Vu2infP - VsAbs_BEP;
+    const psiIp = Vu2P/U2;
+    if(psiIp<=0) return null;
+    const etaHYp = ETA_I - ZETA_C*(psiIp/2 + (phiP*phiP)/(2*psiIp));
+    const psiRealP = etaHYp*psiIp;
+    const Hp_ft_ideal = psiRealP*U2*U2/G_SI*FT_PER_M;
+    // Shock/incidence loss (Stepanoff/Conrad form, slide 21's eq (c) names this loss but gives no
+    // formula or k -- see K_SHO's definition comment above): grows with the square of the flow
+    // fraction's deviation from BEP, scaled by the eye tip speed. This is what keeps the curve from
+    // being close to a straight line across the full Q range.
+    const Hshock_ft = (K_SHO/(2*G_SI))*Math.pow((f-1)*Ue,2)/FT_PER_M;
+    const Hp_ft = Hp_ft_ideal - Hshock_ft;
+    if(Hp_ft<=0) return null;
+    return {Q_gpm: Q_gpm*f, H_ft: Hp_ft};
+  }
+  // sweep fractions ALWAYS include 1.00 exactly, so the curve has a guaranteed point at the
+  // target flow -- this is what "target duty" gets marked against, not the raw input H, since
+  // the two can differ by the blade-angle convergence residual (see usedFallback gap above).
+  const fracs = [0.35,0.40,0.45,0.50,0.55,0.60,0.65,0.70,0.75,0.80,0.85,0.90,0.95,1.00,
+                 1.05,1.10,1.15,1.20,1.25,1.30,1.35];
+  const Q_curve=[], H_curve=[];
+  let bepPoint = null;
+  fracs.forEach(f=>{
+    const p = curvePointAt(f);
+    if(!p) return;
+    Q_curve.push(p.Q_gpm); H_curve.push(p.H_ft);
+    if(Math.abs(f-1.00)<1e-9) bepPoint = p;
+  });
+  if(!bepPoint) bepPoint = curvePointAt(1.00) || {Q_gpm, H_ft};
+  const curveResidualPct = (bepPoint.H_ft - H_ft)/H_ft*100;
+  gaps.push("Performance curve near shutoff is not modeled (deck's own stated limitation); trim family uses standard affinity-law scaling (Q~D, H~D^2) of the full-diameter curve, not an independent solve per diameter.");
+  if(Math.abs(curveResidualPct)>1){
+    gaps.push(`Curve's own achieved head at your target Q (${fmt(bepPoint.H_ft,1)} ft) differs from the requested H (${fmt(H_ft,0)} ft) by ${fmt(curveResidualPct,1)}% -- this is the same blade-angle convergence residual flagged above, now visible on the chart. The plotted "target duty" marker sits on the curve's own value, not the raw input, so the gap is honest rather than hidden.`);
+  }
+  gaps.push(`A shock/incidence-loss term (Stepanoff 1957 / Conrad et al., via Perissinotto et al. 2024 eqs 13-14) is added on top of the velocity-triangle/Table-3 terms -- H_shock = (K_SHO/2g)*[((Q-Q_BEP)/Q_BEP)*U_e]^2, K_SHO=${K_SHO}, back-solved (not from either cited source) to match this tool's own Stepanoff shutoff head at Q=0. This is real but genuinely SMALL across this tool's whole scope (~0.5-1% visible bow, checked at both ends of the Omega_s 0.37-1.0 radial band) -- and per Karassik Section 2.1.1 p.2.45, that's expected physics, not a shortfall: a substantial "rise to shutoff" is specifically a HIGH-specific-speed effect (Fig. 22 discussion -- low-Omega_s impellers have a small eye relative to max diameter, keeping Vtheta2/U2 high and near-constant across flow), and this tool's scope gate caps at Omega_s=1.0 (Ns~2733), below where that effect becomes dramatic. So: near-linear curves for this tool's typical (low-to-mid Omega_s) cases are largely correct, not a bug -- don't force more curvature than the physics at this specific speed actually supports. Friction loss (~Q^2, Table 3 eq (c)'s other term) is still not implemented -- needs passage hydraulic diameter/length this tool doesn't model.`);
+
+  const BHP_curve = Q_curve.map((Qp,i)=>{
+    const Hp=H_curve[i], Qp_si=Qp*GPM_TO_M3S;
+    const P_hyd_p = rho*G_SI*Qp_si*(Hp*M_PER_FT);
+    return (P_hyd_p/etaTotal_final)*HP_PER_W;
+  });
+  const bhp_at_target = (rho*G_SI*(Q_gpm*GPM_TO_M3S)*(bepPoint.H_ft*M_PER_FT)/etaTotal_final)*HP_PER_W;
+
+  return {gaps:[...new Set(gaps)], banners, NPSHr_ft, NPSHa_ft, speedRows, selectedPoles, N_rpm,
+    Nss_sel, nssStatus, Omega_s, Ns_us, classification, classStatus,
+    rs_in: rs_si*FT_PER_M*12, eta_p_shaft, config, ratio, phiE, eyeMode, eyeFlag,
+    D2_in: D2*FT_PER_M*12, b2_in: b2_si*FT_PER_M*12, De_in: De*FT_PER_M*12, U2_fts,
+    beta2b, usedFallback, nb, r3_in: r3_si*2*FT_PER_M*12, Vt_fts: Vt*FT_PER_M,
+    At_in2: At_si*Math.pow(FT_PER_M*12,2), kThroat, diffuserAdded,
+    etaHY_detailed, etam_first, etav_first, etaTotal_first, bhp_first, bhp_jekat, Hshutoff_ft,
+    thrust_lbf, thrust_lbf_naive: thrust_N_naive*LBF_PER_N, p2_psi: p2_pa/PA_PER_PSI,
+    mechanism, mechDesc, etaTotal_final, bhp_final, Q_curve, H_curve, BHP_curve,
+    bepPoint, bhp_at_target, curveResidualPct};
+}
+
+// =====================================================================================
+// Chart rendering (multi-series SVG with gridlines, ticks, legend)
+// =====================================================================================
+function niceTicks(min, max, n){
+  const step = (max-min)/n;
+  const ticks=[]; for(let i=0;i<=n;i++) ticks.push(min+i*step);
+  return ticks;
+}
+function svgMultiChart(svgEl, series, opts){
+  const H=svgEl.viewBox.baseVal.height, W=640, padL=56,padR=140,padT=16,padB=34;
+  const allX = series.flatMap(s=>s.points.map(p=>p.x));
+  const allY = series.flatMap(s=>s.points.map(p=>p.y));
+  const xMin=0, xMax=Math.max(...allX)*1.03;
+  const yMin=0, yMax=Math.max(...allY)*1.12;
+  const plotW = W-padL-padR, plotH = H-padT-padB;
+  const sx = x=> padL + (x-xMin)/(xMax-xMin)*plotW;
+  const sy = y=> H-padB - (y-yMin)/(yMax-yMin)*plotH;
+  let svg='';
+  const xt = niceTicks(xMin,xMax,5), yt = niceTicks(yMin,yMax,5);
+  xt.forEach(t=>{ svg += `<line class="grid" x1="${sx(t)}" y1="${padT}" x2="${sx(t)}" y2="${H-padB}"/><text x="${sx(t)}" y="${H-padB+16}" text-anchor="middle">${fmt(t,0)}</text>`; });
+  yt.forEach(t=>{ svg += `<line class="grid" x1="${padL}" y1="${sy(t)}" x2="${W-padR}" y2="${sy(t)}"/><text x="${padL-6}" y="${sy(t)+3}" text-anchor="end">${fmt(t,0)}</text>`; });
+  svg += `<line class="axis" x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-padB}"/>`;
+  svg += `<line class="axis" x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}"/>`;
+  svg += `<text x="${(padL+W-padR)/2}" y="${H-4}" text-anchor="middle" font-size="10.5">${opts.xlabel||''}</text>`;
+  svg += `<text x="14" y="${(padT+H-padB)/2}" text-anchor="middle" font-size="10.5" transform="rotate(-90,14,${(padT+H-padB)/2})">${opts.ylabel||''}</text>`;
+  series.forEach(s=>{
+    const d = s.points.map((p,i)=>(i===0?'M':'L')+sx(p.x).toFixed(1)+','+sy(p.y).toFixed(1)).join(' ');
+    svg += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.width||1.5}" stroke-dasharray="${s.dash||'none'}" opacity="${s.opacity!=null?s.opacity:1}"/>`;
+  });
+  if(opts.markPoint){
+    svg += `<circle class="pt" cx="${sx(opts.markPoint.x).toFixed(1)}" cy="${sy(opts.markPoint.y).toFixed(1)}" r="4.5"/>`;
+  }
+  const legendItems = series.filter(s=>s.label);
+  let ly = padT+6;
+  legendItems.forEach(s=>{
+    svg += `<line x1="${W-padR+14}" y1="${ly}" x2="${W-padR+34}" y2="${ly}" stroke="${s.color}" stroke-width="${s.width||1.5}" stroke-dasharray="${s.dash||'none'}" opacity="${s.opacity!=null?s.opacity:1}"/>`;
+    svg += `<text x="${W-padR+38}" y="${ly+3}" font-size="9.5">${s.label}</text>`;
+    ly += 15;
+  });
+  if(opts.markPoint){
+    svg += `<circle class="pt" cx="${W-padR+24}" cy="${ly}" r="4"/><text x="${W-padR+38}" y="${ly+3}" font-size="9.5">target duty</text>`;
+  }
+  svgEl.innerHTML = svg;
+}
+
+// =====================================================================================
+// UI wiring
+// =====================================================================================
+const fluidSelect = document.getElementById('cps-fluid');
+Object.keys(FLUID_TABLE).forEach(name=>{
+  const o=document.createElement('option'); o.value=name; o.textContent=name; fluidSelect.appendChild(o);
+});
+const serviceSelect = document.getElementById('cps-service');
+SERVICE_CATS.forEach(([label,ratio])=>{
+  const o=document.createElement('option'); o.value=ratio; o.textContent=label; serviceSelect.appendChild(o);
+});
+
+let _serviceTouched = false;
+serviceSelect.addEventListener('change', ()=>{ _serviceTouched=true; scheduleRun(); });
+
+function linkSliderNumber(sliderId, numberId){
+  const s=document.getElementById(sliderId), n=document.getElementById(numberId);
+  s.addEventListener('input', ()=>{ n.value=s.value; scheduleRun(); });
+  n.addEventListener('input', ()=>{
+    let v=parseFloat(n.value);
+    if(!isNaN(v)){ if(v>parseFloat(s.max)) s.max=v; if(v<parseFloat(s.min)) s.min=v; s.value=v; }
+    scheduleRun();
+  });
+}
+linkSliderNumber('cps-Q_slider','cps-Q'); linkSliderNumber('cps-H_slider','cps-H');
+linkSliderNumber('cps-T_slider','cps-T'); linkSliderNumber('cps-NPSHa_slider','cps-NPSHa');
+
+let _raf=null;
+function scheduleRun(){ if(_raf) cancelAnimationFrame(_raf); _raf=requestAnimationFrame(runSizing); }
+
+function updateFluidProps(){
+  const name = fluidSelect.value;
+  const T_F = valUS('T','temp');
+  const props = interpFluid(name, T_F);
+  if(props){
+    document.getElementById('cps-SG').value = props.SG.toFixed(4);
+    document.getElementById('cps-vp').value = (UNIT_SYS==='si' ? usToSi('press',props.vp_psia) : props.vp_psia).toFixed(5);
+    document.getElementById('cps-visc').value = Math.max(props.visc_cP, 0.001).toFixed(4);
+  }
+  if(!_serviceTouched){
+    const solids = document.getElementById('cps-solids').value==='yes';
+    const idx = deriveServiceCategory(name, val('visc'), solids, valUS('vp','press'));
+    serviceSelect.selectedIndex = idx;
+  }
+}
+fluidSelect.addEventListener('change', ()=>{ updateFluidProps(); scheduleRun(); });
+window.addEventListener('site-units-change', e=>setUnitSystem(e.detail.sys));
+document.getElementById('cps-T_slider').addEventListener('input', updateFluidProps);
+document.getElementById('cps-T').addEventListener('input', updateFluidProps);
+document.getElementById('cps-solids').addEventListener('change', updateFluidProps);
+document.getElementById('cps-config').addEventListener('change', scheduleRun);
+document.querySelectorAll('#cps-SG, #cps-vp, #cps-visc').forEach(el=>el.addEventListener('input', scheduleRun));
+
+let lastRes = null;
+function runSizing(){
+  const Q_gpm=valUS('Q','flow'), H_ft=valUS('H','len_ft'), NPSHa_ft=valUS('NPSHa','len_ft'), SG=val('SG'), visc_cP=val('visc');
+  if(isNaN(Q_gpm)||isNaN(H_ft)||Q_gpm<=0||H_ft<=0) return;
+  const marginRatio = parseFloat(serviceSelect.value);
+  const solids = document.getElementById('cps-solids').value==='yes';
+  const config = document.getElementById('cps-config').value;
+
+  const res = sizePump(Q_gpm, H_ft, SG, visc_cP, NPSHa_ft, marginRatio, solids, config);
+  lastRes = res;
+
+  document.getElementById('cps-output').style.display='block';
+
+  const sb=document.getElementById('cps-screeningBanners'); sb.innerHTML='';
+  res.banners.forEach(([t,txt])=>{ const d=document.createElement('div'); d.className='banner '+t; d.textContent=txt; sb.appendChild(d); });
+  document.getElementById('cps-out_Ns').textContent=fmt(res.Ns_us,0);
+  document.getElementById('cps-out_Ns_note').textContent=res.classification;
+  document.getElementById('cps-out_Omega').textContent=fmt(res.Omega_s,3);
+  document.getElementById('cps-out_class').innerHTML = res.classification+` <span class="pill ${res.classStatus}">${res.classStatus.toUpperCase()}</span>`;
+
+  const stbody=document.getElementById('cps-speedTable'); stbody.innerHTML='';
+  res.speedRows.forEach(r=>{
+    const tr=document.createElement('tr'); if(r.poles===res.selectedPoles) tr.className='selected';
+    tr.innerHTML=`<td>${r.poles}</td><td class="num">${fmt(r.N,0)}</td><td class="num">${fmt(r.Nss,0)}</td><td><span class="pill ${r.status}">${r.status}</span></td>`;
+    stbody.appendChild(tr);
+  });
+  document.getElementById('cps-speedTableNote').textContent =
+    `Fastest of the 4 standard speeds (3600/1800/1200/900 rpm) with N_ss <= ${NSS_BAD} (Fig. 25 acceptable-band edge) is selected automatically -- slide 7 remedy 1. Above ${NSS_WARN} (HI target) is still accepted but flagged (warn/bad pill).`;
+  document.getElementById('cps-out_N').textContent=`${fmt(res.N_rpm,0)} rpm`;
+  document.getElementById('cps-out_U2_note').textContent=`U2=${fmtU(res.U2_fts,'vel',0)}`;
+  document.getElementById('cps-out_NPSHr').textContent=fmtU(res.NPSHr_ft,'len_ft',1);
+  document.getElementById('cps-out_Nss').textContent=fmt(res.Nss_sel,0);
+  document.getElementById('cps-out_NssStatus').innerHTML=`<span class="pill ${res.nssStatus}">${res.nssStatus}</span>`;
+
+  document.getElementById('cps-out_rs').textContent=fmtU(res.rs_in,'len_in',3);
+  document.getElementById('cps-out_rs_note').textContent=`${res.config==='between_bearings'?'blocks the eye (BB)':'clear at eye (overhung, rₛ=0 there)'}, η_p≈${fmt(res.eta_p_shaft*100,0)}%`;
+  document.getElementById('cps-out_phiE').textContent = res.phiE!=null ? fmt(res.phiE,3) : '—';
+  document.getElementById('cps-out_phiE_note').textContent = res.eyeMode;
+  document.getElementById('cps-out_r2').textContent=fmtU(res.D2_in,'len_in',1);
+  document.getElementById('cps-out_b2').textContent=fmtU(res.b2_in,'len_in',2);
+  document.getElementById('cps-out_re').textContent=fmtU(res.De_in,'len_in',1);
+  document.getElementById('cps-out_re_note').textContent = res.config==='between_bearings' ? `rₛ/rₑ=${fmt(res.ratio,2)} — ${res.eyeFlag}` : res.eyeFlag;
+  document.getElementById('cps-out_beta2').textContent=`${fmt(res.beta2b,1)}°`;
+  document.getElementById('cps-out_beta2_note').textContent = res.usedFallback ? 'FALLBACK RANGE — see gaps' : 'within standard range';
+  document.getElementById('cps-out_nb').textContent=res.nb;
+  document.getElementById('cps-out_r3').textContent=`${fmtU(res.r3_in,'len_in',1)} / ${fmtU(res.At_in2,'area_in2',2)}`;
+  document.getElementById('cps-out_throat_note').textContent=`Vt=${fmtU(res.Vt_fts,'vel',1)}, k=${res.kThroat}`;
+  document.getElementById('cps-collectorNote').textContent = res.diffuserAdded
+    ? `Collector: volute + vaned diffuser (U2=${fmtU(res.U2_fts,'vel',0)} exceeds the ${fmtU(DIFFUSER_U2_THRESHOLD_FTS,'vel',0)} threshold, slide 15 — added automatically, not user-selected).`
+    : `Collector: volute only (U2=${fmtU(res.U2_fts,'vel',0)} is below the ${fmtU(DIFFUSER_U2_THRESHOLD_FTS,'vel',0)} diffuser-add threshold).`;
+  if(res.diffuserAdded){
+    const nv=res.nb+3, Aex=1.8*res.At_in2;
+    document.getElementById('cps-diffuserExtra').innerHTML=`<div class="grid2">
+      <div class="stat"><div class="v">${nv}</div><div class="l">Vane count n_v (n_b+3 heuristic)</div></div>
+      <div class="stat"><div class="v">${fmtU(Aex,'area_in2',1)}</div><div class="l">Diffuser exit area (1.8×A_t, slide 17)</div></div>
+    </div>`;
+  } else { document.getElementById('cps-diffuserExtra').innerHTML=''; }
+
+  document.getElementById('cps-out_etaHY').textContent=`${fmt(res.etaHY_detailed*100,1)}%`;
+  document.getElementById('cps-out_etam').textContent=`${fmt(res.etam_first*100,1)}%`;
+  document.getElementById('cps-out_etav').textContent=`${fmt(res.etav_first*100,1)}%`;
+  document.getElementById('cps-out_etaTotal').textContent=`${fmt(res.etaTotal_first*100,1)}%`;
+  document.getElementById('cps-out_bhp').textContent=fmtU(res.bhp_first,'power',1);
+  document.getElementById('cps-out_bhpJekat').textContent=fmtU(res.bhp_jekat,'power',1);
+
+  document.getElementById('cps-out_thrust').textContent=fmtU(res.thrust_lbf,'force',0);
+  document.getElementById('cps-out_thrust_naive').textContent=`uncorrected: ${fmtU(res.thrust_lbf_naive,'force',0)}`;
+  document.getElementById('cps-out_p2').textContent=`${fmtU(res.p2_psi,'press',0)} (Δ over suction)`;
+  document.getElementById('cps-out_Hshutoff').textContent=fmtU(res.Hshutoff_ft,'len_ft',0);
+  document.getElementById('cps-mechBox').innerHTML=`<b>Selected mechanism: ${res.mechanism}</b><br>${res.mechDesc}`;
+
+  document.getElementById('cps-out_etaTotal_final').textContent=`${fmt(res.etaTotal_final*100,1)}%`;
+  document.getElementById('cps-out_bhp_final').textContent=fmtU(res.bhp_final,'power',1);
+  const delta=res.bhp_final-res.bhp_first;
+  document.getElementById('cps-out_bhp_delta').textContent=(delta>=0?'+':'')+fmtU(delta,'power',1);
+
+  const qU = q => UNIT_SYS==='si' ? usToSi('flow',q) : q;
+  const hU = h => UNIT_SYS==='si' ? usToSi('len_ft',h) : h;
+  const pU = p => UNIT_SYS==='si' ? usToSi('power',p) : p;
+  if(res.Q_curve.length){
+    const D2full = res.D2_in;
+    const colors = ['#b8cdd4','#9bb9c2','#7ea5b1','#5a8fa0','#0f7a8c'];
+    const hqSeries = TRIM_FRACTIONS.map((tf,i)=>({
+      points: res.Q_curve.map((q,idx)=>({x:qU(q*tf), y:hU(res.H_curve[idx]*tf*tf)})),
+      color: colors[i], width: tf===1.00?2.4:1.2, opacity: tf===1.00?1:0.85,
+      label: `${fmtU(tf*D2full,'len_in',1)} (${fmt(tf*100,0)}%)`
+    }));
+    const shutoffSeries = {points:[{x:0,y:hU(res.Hshutoff_ft)},{x:qU(res.Q_curve[0]),y:hU(res.H_curve[0])}], color:'#a8791f', width:1.4, dash:'4,3', label:'shutoff (interpolated)'};
+    svgMultiChart(document.getElementById('cps-chartHQ'), [shutoffSeries, ...hqSeries], {xlabel:`Q (${UNIT_LABEL.flow[UNIT_SYS]})`, ylabel:`H (${UNIT_LABEL.len_ft[UNIT_SYS]})`, markPoint:res.bepPoint ? {x:qU(res.bepPoint.Q_gpm), y:hU(res.bepPoint.H_ft)} : {x:qU(Q_gpm),y:hU(H_ft)}});
+    svgMultiChart(document.getElementById('cps-chartBHP'), [{points:res.Q_curve.map((q,i)=>({x:qU(q),y:pU(res.BHP_curve[i])})), color:'#3f8f6b', width:2.2, label:`${UNIT_LABEL.power[UNIT_SYS].toUpperCase()} @ 100% D`}],
+      {xlabel:`Q (${UNIT_LABEL.flow[UNIT_SYS]})`, ylabel:UNIT_LABEL.power[UNIT_SYS], markPoint:{x:qU(Q_gpm), y:pU(res.bhp_at_target)}});
+  }
+  if(Math.abs(res.curveResidualPct)>1){
+    const d=document.createElement('div'); d.className='banner warn';
+    d.textContent = `Curve's achieved head at your target Q is ${fmtU(res.bepPoint.H_ft,'len_ft',1)} vs. the ${fmtU(H_ft,'len_ft',0)} you requested (${res.curveResidualPct>=0?'+':''}${fmt(res.curveResidualPct,1)}%) -- the marked point reflects what the model actually predicts, not the input. This is the blade-angle convergence residual from the geometry panel above, now visible on the curve.`;
+    document.getElementById('cps-screeningBanners').appendChild(d);
+  }
+
+  const constants = [
+    `Shaft radius rₛ (slide 9): torsion-only sizing, Sₛ=${SS_ALLOW_PSI} psi allowable shear (carbon-steel keyed shaft, ROT), keyway derate ${KEYWAY_FACTOR}×. η_p first-pass from Anderson's chart fit (X=${ANDERSON_X}).`,
+    `Eye radius (slide 10, Eq. 49/50): φₑ back-solved from required N_ss via Table 1a (Gongwer τ=(${K1_TAU}+${K2_TAU})φₑ²+${K2_TAU}), capped at ${PHI_E_CAP}; rₛ blocks the eye only for between-bearings configs (rₛ/rₑ seed ${RS_RE_SEED}) — overhung uses rₛ=0 at the eye.`,
+    `ε=${EPS}, δ/r_R=${DELTA_RR}, η_I=${ETA_I}, ζ_c=${ZETA_C}, p₂ frac=${P2_FRAC}, Gap B=${GAP_B_FRAC} — see sizing_tool_parameter_limits.md for each range/rationale.`,
+    `N_ss target/acceptable-band limit: ${NSS_WARN}/${NSS_BAD} (HI target / Fig. 25 acceptable-band edge, slides 6-7) — the drop-speed cascade (remedy 1) accepts the fastest of the 4 standard speeds with N_ss <= ${NSS_BAD}, flagging (not rejecting) anything above ${NSS_WARN}.`,
+    `Tip-speed caution ${U2_WARN_FTS} ft/s, viscosity caution ${VISC_WARN_CP} cP, diffuser-add threshold ${DIFFUSER_U2_THRESHOLD_FTS} ft/s — generic proxies/judgment calls, not cited numbers.`,
+    `Blade angle β₂ᵦ search: primary [${BETA_PRIMARY}]° (standard backward-curved practice), fallback [${BETA_FALLBACK}]° flagged when used.`,
+    `Axial thrust K=${THRUST_K} empirical correction (naive uniform-pressure estimate → real-ish, unverified against actual source Table 5).`,
+    `Shock/incidence-loss curvature K_SHO=${K_SHO} (Stepanoff/Conrad functional form, but this coefficient is back-solved against this tool's own shutoff head, not from either source — holds within ~±20% across the case spread, see sizing_tool_parameter_limits.md).`,
+    `Service category auto-derived from viscosity (>${VISC_SERVICE_CP} cP), solids, vapor pressure (>${HOT_SERVICE_VP_PSIA} psia), and fluid identity — see sizing_tool_parameter_limits.md.`,
+    `Q/H slider bounds + corner flags are an approximate reading of Pump Selection Guidelines.png, not a pixel digitization.`,
+    `ρ = SG × 998.2 kg/m³; ν = (cP/SG)×1e-6 m²/s.`,
+  ];
+  document.getElementById('cps-assumeList').innerHTML = constants.map(a=>`<div class="assume">${a}</div>`).join('');
+  document.getElementById('cps-gapList').innerHTML = res.gaps.map(g=>`<div class="gap">${g}</div>`).join('');
+
+  flashCollapsedPanels();
+}
+
+// ---- collapsible result panels: flash a COLLAPSED panel's header after a recompute so a
+// slider change is still noticeable even when the panel it affects isn't open ----
+let _firstRun = true;
+const RESULT_PANEL_IDS = ['cps-panel-screening','cps-panel-speed','cps-panel-geometry','cps-panel-curve','cps-panel-thrust','cps-panel-final','cps-panel-datasheet'];
+function flashCollapsedPanels(){
+  if(_firstRun){ _firstRun=false; return; }   // don't flash everything on initial page load
+  RESULT_PANEL_IDS.forEach(id=>{
+    const d = document.getElementById('cps-'+id);
+    if(!d || d.open) return;
+    const s = d.querySelector(':scope > summary');
+    if(!s) return;
+    s.classList.remove('justUpdated');
+    void s.offsetWidth;   // restart the CSS animation if it's already flashing
+    s.classList.add('justUpdated');
+    setTimeout(()=>s.classList.remove('justUpdated'), 1700);
+  });
+}
+
+// =====================================================================================
+// Vendor data sheet -- fills the classic Pump Data Sheet template (Reference Material/Pump
+// Data Sheet.pdf) with this tool's own computed operating conditions AND sizing/geometry
+// outputs, per user direction 2026-09-06: "needs to print pump size parameters, not just
+// operating conditions -- the intention is to give the vendor an idea of what we're looking
+// for, so they can propose their closest catalog model." Coordinates are hand-estimated from
+// the template's rendered layout (the Operating Conditions block has a real text layer; the
+// Pump Specifications block below it does not -- see sizing_tool_parameter_limits.md).
+// Deliberately left blank (not fabricated): GPM(x) Min. Cont. Flow, Suction/Discharge
+// pressure, BHP Recommended, MODEL/SIZE/ROTATION and everything under Materials/Motor
+// Data -- all vendor- or MOC-specified, outside this tool's scope.
+async function downloadDataSheet(){
+  const statusEl = document.getElementById('cps-datasheet-status');
+  const btn = document.getElementById('cps-btn-datasheet');
+  try {
+    if(!lastRes){ if(statusEl) statusEl.textContent='Run the calculator first.'; return; }
+    if(typeof PDFLib === 'undefined'){ if(statusEl) statusEl.textContent='PDF library failed to load.'; return; }
+    if(btn) btn.disabled = true;
+    if(statusEl) statusEl.textContent = 'Generating...';
+
+    const res = lastRes;
+    const fluidName = fluidSelect.value;
+    // Data sheet is always filled in US-customary units (industry convention for this template's
+    // labeled fields, e.g. "psig"/"°F"), regardless of which display system is currently active.
+    const Q_gpm=valUS('Q','flow'), H_ft=valUS('H','len_ft'), T_F=valUS('T','temp'), SG=val('SG'),
+          visc_cP=val('visc'), vp_psia=valUS('vp','press'), NPSHa_ft=valUS('NPSHa','len_ft');
+    const solidsYes = document.getElementById('cps-solids').value==='yes';
+    const dP_stage_psi = H_ft*SG/2.31;                       // same formula sizePump() uses internally
+    const maxWorkPres_psi = res.Hshutoff_ft*SG/2.31;          // shutoff-equivalent pressure -- a real casing-rating indicator
+    const bhpNonOverload = (res.BHP_curve && res.BHP_curve.length) ? Math.max.apply(null, res.BHP_curve) : null;
+
+    const bytes = await fetch('tools/pump-data-sheet-template.pdf').then(function(r){
+      if(!r.ok) throw new Error('template fetch failed: ' + r.status);
+      return r.arrayBuffer();
+    });
+    const pdfDoc = await PDFLib.PDFDocument.load(bytes);
+    const page = pdfDoc.getPages()[0];
+    const pageHeight = page.getSize().height;
+    const font = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+
+    function put(x, fitzY, size, text){
+      if(text===null || text===undefined || text==='' || (typeof text==='number' && !isFinite(text))) return;
+      page.drawText(String(text), { x, y: pageHeight-fitzY, size, font, color: PDFLib.rgb(0,0,0) });
+    }
+
+    // ---- Operating Conditions (duty point the vendor must meet) ----
+    put(90,  207.1, 8, fluidName);
+    put(365, 207.1, 8, fmt(Q_gpm,0));
+    put(480, 207.1, 8, fmt(res.N_rpm,0));
+    put(155, 217.2, 8, fmt(T_F,0));
+    put(478, 217.2, 8, fmt(res.etaTotal_final*100,1)+'%');
+    put(105, 227.3, 8, fmt(SG,3));
+    put(463, 227.3, 8, fmt(res.bhp_final,1));
+    put(105, 237.1, 8, fmt(visc_cP,2));
+    put(463, 237.1, 8, bhpNonOverload!=null ? fmt(bhpNonOverload,1) : null);
+    put(122, 247.2, 8, fmt(vp_psia,4));
+    put(370, 247.2, 8, fmt(dP_stage_psi,1));
+    put(143, 257.1, 6, fmt(NPSHa_ft,1));
+    put(195, 257.1, 6, fmt(res.NPSHr_ft,1));
+    put(370, 257.1, 8, fmt(H_ft,0));
+    put(135, 267.4, 8, solidsYes ? 'Yes' : 'No');
+
+    // ---- Pump Specifications (size parameters -- what the vendor sizes their model against) ----
+    put(110, 314,   8, '1');                                    // No. of stages -- this tool is single-stage only
+    put(280, 314,   8, fmt(maxWorkPres_psi,0));                 // Max. work pres., psig (shutoff-equivalent)
+    put(550, 314,   8, fmt(T_F,0));                             // Max. work temp., degF (repeats pumping temp)
+    put(150, 344.4, 8, (res.D2_in!=null && isFinite(res.D2_in)) ? fmt(res.D2_in,1)+' in' : null);   // Impeller dia., rated
+
+    const today = new Date();
+    const dateStr = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+    put(440, 134.9, 8, dateStr);
+
+    const outBytes = await pdfDoc.save();
+    const blob = new Blob([outBytes], {type:'application/pdf'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'Pump_Data_Sheet_'+fluidName.replace(/\s+/g,'_')+'_'+dateStr+'.pdf';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    if(statusEl) statusEl.textContent = "Downloaded. Materials, motor data, mechanical seal, packing/gland, MODEL/SIZE/ROTATION, and Min. Cont. Flow / Suction-Discharge pressure / BHP Recommended are intentionally left blank -- vendor-specified or outside this tool's scope.";
+  } catch(err) {
+    if(statusEl) statusEl.textContent = 'Could not generate the data sheet: '+err.message;
+  } finally {
+    if(btn) btn.disabled = false;
+  }
+}
+document.getElementById('cps-btn-datasheet').addEventListener('click', downloadDataSheet);
+
+// ---- init ----
+fluidSelect.value = 'water';
+updateFluidProps();
+runSizing();
+
+})();
+</script>
+
+      </div>
+    </details>
+  </div>
+</section>
+</body>
+</html>

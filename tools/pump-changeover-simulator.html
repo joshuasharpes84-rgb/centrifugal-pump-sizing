@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pump Changeover Simulator</title>
+<style>
+  :root{
+    --bg:#fafafa; --panel:#ffffff; --panel2:#f4f4f2; --border:#e0e0e0;
+    --text:#2a2a2a; --heading:#1a1a1a; --muted:#6b6b6b; --accent:#0f7a8c; --accent-dark:#0b5f6d;
+    --warn-bd:#a8791f; --warn-tx:#8a6215;
+    --bad-bd:#a83d3d; --bad-tx:#8f3232;
+    --ok-bd:#2f8a5f; --ok-tx:#256e4b;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{background:var(--bg); color:var(--text); margin:0; padding:28px 40px 72px; max-width:1400px;}
+  @media (max-width: 700px){ body{padding:16px 16px 48px;} }
+  h1{font-size:1.5rem; margin:0 0 4px; color:var(--heading); font-weight:600;}
+  .subtitle{color:var(--muted); font-size:0.86rem; margin-bottom:22px; max-width:900px; line-height:1.5;}
+  h2{font-size:1rem; border-bottom:1px solid var(--border); padding-bottom:7px; margin:18px 0 10px; color:var(--heading); font-weight:600;}
+  h2:first-child{margin-top:0;}
+  code{font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace; font-size:0.92em; background:var(--panel2); padding:1px 5px; border-radius:2px;}
+  .layout{display:grid; grid-template-columns: 360px 1fr; gap:26px; align-items:start;}
+  @media (max-width: 900px){ .layout{grid-template-columns: 1fr;} }
+  .panel{background:var(--panel); border:1px solid var(--border); border-radius:3px; padding:18px 20px;}
+  .field{margin-bottom:11px;}
+  label{display:block; font-size:0.76rem; color:var(--muted); margin-bottom:3px;}
+  input[type=number], select{
+    width:100%; padding:6px 8px; background:#fff; border:1px solid var(--border);
+    border-radius:2px; color:var(--text); font-size:0.86rem; font-family:"SFMono-Regular",Consolas,monospace;
+  }
+  select{font-family:inherit;}
+  input[type=range]{width:100%; accent-color:var(--accent); margin-top:2px;}
+  input[type=checkbox]{accent-color:var(--accent);}
+  .sliderRow{display:flex; align-items:center; gap:8px;}
+  .sliderRow input[type=range]{flex:1;}
+  .sliderRow input[type=number]{width:86px; flex:0 0 86px;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .unit{color:var(--muted); font-size:0.72rem; margin-left:4px;}
+  .hint{font-size:0.71rem; color:var(--muted); margin-top:3px; line-height:1.4;}
+  details.sub{margin-top:8px; border-top:1px solid var(--border); padding-top:8px;}
+  details.sub > summary{cursor:pointer; color:var(--accent-dark); font-size:0.82rem; user-select:none;}
+  table{width:100%; border-collapse:collapse; font-size:0.83rem; margin:8px 0 4px;}
+  td,th{padding:5px 8px; border-bottom:1px solid var(--border); text-align:left;}
+  th{color:var(--muted); font-weight:600; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.02em;}
+  td.num{text-align:right; font-variant-numeric:tabular-nums; font-family:"SFMono-Regular",Consolas,monospace;}
+  .banner{border-left:3px solid var(--border); background:var(--panel2); padding:9px 12px; margin-bottom:10px; font-size:0.84rem; line-height:1.5;}
+  .banner.warn{border-color:var(--warn-bd); color:var(--warn-tx);}
+  .banner.bad{border-color:var(--bad-bd); color:var(--bad-tx);}
+  .banner.ok{border-color:var(--ok-bd); color:var(--ok-tx);}
+  .pill{display:inline-block; font-size:0.72rem; font-weight:600; font-family:"SFMono-Regular",Consolas,monospace;}
+  .pill.ok{color:var(--ok-tx);} .pill.warn{color:var(--warn-tx);} .pill.bad{color:var(--bad-tx);}
+  .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+  @media (max-width: 700px){ .grid3{grid-template-columns:1fr 1fr;} }
+  .stat{background:var(--panel2); border:1px solid var(--border); border-radius:2px; padding:10px 12px;}
+  .stat .v{font-size:1.1rem; font-weight:700; font-family:"SFMono-Regular",Consolas,monospace; color:var(--heading);}
+  .stat .l{font-size:0.72rem; color:var(--muted); margin-top:2px;}
+  .stat .s{font-size:0.71rem; color:var(--muted); margin-top:2px;}
+  .note{background:var(--panel2); border-left:3px solid var(--accent); padding:9px 12px; font-size:0.78rem; color:var(--muted); margin-bottom:10px; line-height:1.5;}
+  .gap{background:var(--panel2); border-left:3px solid var(--warn-bd); padding:8px 10px; margin:6px 0; font-size:0.81rem; line-height:1.5;}
+  svg.chart{width:100%; height:auto; background:var(--panel); border:1px solid var(--border); border-radius:2px;}
+  svg.chart text{fill:var(--muted); font-size:10px; font-family:"SFMono-Regular",Consolas,monospace;}
+  svg.chart .grid{stroke:var(--border); stroke-width:1;}
+  svg.chart .axis{stroke:#b0b0b0; stroke-width:1;}
+  .resultPanel{margin-bottom:14px; border-radius:3px;}
+  .resultPanel > summary{list-style:none; cursor:pointer; user-select:none; display:flex; align-items:center; gap:8px;
+    font-size:1rem; font-weight:600; color:var(--heading); padding:12px 16px; background:var(--panel);
+    border:1px solid var(--border); border-radius:3px;}
+  .resultPanel > summary::-webkit-details-marker{display:none;}
+  .resultPanel > summary::before{content:'▸'; color:var(--accent); font-size:0.8em; transition:transform .12s;}
+  .resultPanel[open] > summary::before{transform:rotate(90deg);}
+  .resultPanel[open] > summary{border-bottom-left-radius:0; border-bottom-right-radius:0; border-bottom:1px solid var(--border);}
+  .resultPanel > summary .tag{margin-left:auto; font-size:0.68rem; color:var(--accent); font-family:"SFMono-Regular",Consolas,monospace; font-weight:normal;}
+  .resultPanel-body{border:1px solid var(--border); border-top:none; border-bottom-left-radius:3px; border-bottom-right-radius:3px; padding:18px 20px; background:var(--panel);}
+  footer{margin-top:34px; color:var(--text); font-size:0.86rem; line-height:1.6; max-width:900px; background:var(--panel); border:1px solid var(--border); border-radius:3px; padding:14px 16px;}
+  a{color:var(--accent); text-decoration:underline;}
+  .viewBtn{background:var(--panel); color:var(--muted); padding:5px 12px; font-size:0.78rem; font-weight:600; border:none; cursor:pointer;}
+  .viewBtn + .viewBtn{border-left:1px solid var(--border);}
+  .viewBtn.active{background:var(--accent); color:#fff;}
+  .viewBtn:not(.active):hover{background:var(--panel2);}
+</style>
+</head>
+<body>
+
+<h1>Pump Changeover Simulator</h1>
+<div class="subtitle">Two identical centrifugal pumps on a common header. Pump A is running; pump B is about to be started for a changeover. This checks whether B's check valve will lift against the header, where both pumps sit during the overlap relative to minimum flow, and how hot a deadheaded pump gets under the protection layers you select. Pump data comes from the <a href="Case Study Sizing Tool.html">Centrifugal Pump Sizing tool</a> (its default pump, or the one you hand over from it). US units only in this version.<br><b>Scope:</b> single-stage, radial/mixed-flow centrifugal pumps, the same screen the sizing tool applies (10–10,000 gpm, 15–1,000 ft, Ω<sub>s</sub> 0.2–1.6). Multistage, axial-flow and positive-displacement duties are refused. Header flow is limited to 30–130% of rated (the computed curve) and wear-ring clearance ratios to 1–4.</div>
+
+<div id="handoffBanner"></div>
+
+<div class="layout">
+
+<!-- ============================ INPUTS ============================ -->
+<div class="panel">
+  <h2>Pump (from sizing tool)</h2>
+  <div id="pumpSummary" class="note" style="margin-bottom:6px;"></div>
+  <div class="field">
+    <label>Vendor shutoff head, new pump (optional) <span class="unit">ft</span></label>
+    <input type="number" id="vendorHso" min="0" step="any" placeholder="from the vendor's test curve">
+    <div class="hint">Leave blank to use the sizing estimate (Stepanoff ψ 0.585). A tested value replaces it.</div>
+  </div>
+
+  <h2>Operating point before the changeover</h2>
+  <div class="field">
+    <label>Header flow, pump A alone <span class="unit">gpm</span></label>
+    <div class="sliderRow"><input type="range" id="Qop_slider"><input type="number" id="Qop" step="any"></div>
+    <div class="hint">Defaults to the pump's rated (BEP) flow.</div>
+  </div>
+  <div class="field">
+    <label>Flow during the overlap</label>
+    <select id="mode">
+      <option value="hold" selected>Held constant by a flow controller (swap-over)</option>
+      <option value="setpoint">Moved to a new setpoint</option>
+      <option value="uncontrolled">Uncontrolled — set by the system curve</option>
+    </select>
+  </div>
+  <div class="field" id="setpointField" style="display:none;">
+    <label>New flow setpoint <span class="unit">gpm</span></label>
+    <input type="number" id="Qset" step="any">
+  </div>
+
+  <h2>Wear (wear-ring clearance)</h2>
+  <div class="field">
+    <label>Pump A (running) clearance ratio c/c₀</label>
+    <div class="sliderRow"><input type="range" id="cA_slider" min="1" max="4" step="0.05" value="1"><input type="number" id="cA" min="1" max="4" step="0.05" value="1"></div>
+  </div>
+  <div class="field">
+    <label>Pump B (incoming) clearance ratio c/c₀</label>
+    <div class="sliderRow"><input type="range" id="cB_slider" min="1" max="4" step="0.05" value="1"><input type="number" id="cB" min="1" max="4" step="0.05" value="1"></div>
+    <div class="hint">1 = new rings; 2 = Karassik's replacement point (p.2.131); 4 = the tool's limit.</div>
+    <details class="sub" id="clearanceGuide">
+      <summary>How do I determine c/c₀?</summary>
+      <div class="hint" style="font-size:0.76rem;">
+        <p style="margin:6px 0;"><b>What it is.</b> c/c₀ = current diametral wear-ring clearance ÷ the as-new clearance. Karassik (§2.1.3, p.2.131): "replace or repair wearing rings when the nominal clearance has doubled." So 2.0 is the most a pump on a working PM program should reach.</p>
+        <p style="margin:6px 0;"><b>Why it matters here.</b> At low header flow, A runs near the flat top of its curve, so B lifts by only a few percent of head. Wear cuts B's shutoff head by ~3.4% at c/c₀ = 2 (Table 3), which can be enough to keep its check valve shut. The worst pairing is a freshly repaired A against an unrepaired B.</p>
+        <p style="margin:6px 0;"><b>Pump A (running).</b> It can't be measured in service, and it doesn't need to be. Run it at both bounds:</p>
+        <ul style="margin:4px 0 6px 18px; padding:0;">
+          <li><b>1.0 for B's lift check.</b> A new A holds the header at its highest head, which is the hardest case for B.</li>
+          <li><b>Worn (e.g. 2.0) for A's own minimum flow.</b> A worn A gets pushed further back on its curve during the overlap.</li>
+        </ul>
+        <p style="margin:6px 0;"><b>Pump B (standby).</b> Take it from B's last repair record:</p>
+        <table style="font-size:0.74rem; margin:4px 0;">
+          <tr><th>Record shows</th><th>Use</th></tr>
+          <tr><td>Rings replaced at the last repair</td><td class="num">≈ 1.0</td></tr>
+          <tr><td>As-left clearance recorded</td><td class="num">measured ÷ c₀</td></tr>
+          <tr><td>Repaired, rings not recorded, or no record</td><td class="num">2.0</td></tr>
+          <tr><td>Abrasive solids, or repairs overdue</td><td class="num">up to 3.56–4</td></tr>
+        </table>
+        <ul style="margin:4px 0 6px 18px; padding:0;">
+          <li><b>c₀:</b> the vendor's cross-section or data book. Failing that, Karassik Fig. 48 (§2.2.1, p.2.275) gives the new diametral clearance against leakage-joint diameter for non-galling pairs. A 9.000 in ring gives 0.018–0.024 in; add 0.002–0.004 in for galling metals such as chrome steels.</li>
+          <li><b>Wear since the last repair</b> follows run hours, not calendar time. A true standby wears little; pumps alternated on a schedule wear about equally.</li>
+        </ul>
+        <p style="margin:6px 0;"><b>When the rings can be measured.</b> On back-pull-out overhung pumps, most seal and bearing repairs pull the rotor, which exposes the impeller ring and the casing-ring bore. Routine PMs (lube, vibration, alignment) don't open the casing. Recording as-found and as-left ring clearance on those repair work orders is what makes a measured value available later.</p>
+        <p style="margin:6px 0;"><b>Inferring it from a field test is weak.</b> At c/c₀ = 1.78, Table 3 shows shutoff head down only 3% and BEP head down 1.7%. That's within gauge, speed and impeller-erosion error. A test can tell "about new" from "badly worn" (3.5 or more), but not 1.5 from 2.</p>
+        <p style="margin:6px 0;"><b>Basis.</b> The head factors come from Karassik §2.1.3 Table 3, which is one Flowserve pump (n<sub>s</sub> 2100, 63 ft); other pumps in that table respond differently. The tool stops at 4: twice the replacement point, which already covers the abrasive or overdue case.</p>
+      </div>
+    </details>
+  </div>
+
+  <h2>System</h2>
+  <div class="field">
+    <label>Static head</label>
+    <select id="sysPreset">
+      <option value="static92" selected>Static-dominated — 92% of head (Karassik §11.1 Example 1)</option>
+      <option value="closed">Closed circulation loop — 0% static</option>
+      <option value="custom">Custom static fraction</option>
+    </select>
+  </div>
+  <div class="field" id="customStaticField" style="display:none;">
+    <label>Static head as % of pump A's head <span class="unit">%</span></label>
+    <div class="sliderRow"><input type="range" id="sf_slider" min="0" max="98" step="1" value="50"><input type="number" id="sf" min="0" max="98" step="1" value="50"></div>
+  </div>
+  <details class="sub" id="sysDetails">
+    <summary>Define system specifics (optional)</summary>
+    <div class="hint" style="margin:6px 0 8px;">Suction-side values are always used for the flash limit. Tick the box to also replace the static-head preset with these vessel conditions.</div>
+    <label style="display:flex; align-items:center; gap:6px; color:var(--text);"><input type="checkbox" id="useDefined"> Use these for static head</label>
+    <div class="row2" style="margin-top:8px;">
+      <div class="field"><label>Suction vessel <span class="unit">psig</span></label><input type="number" id="Ps" value="0" step="any"></div>
+      <div class="field"><label>Suction level above pump <span class="unit">ft</span></label><input type="number" id="Zs" value="0" step="any"></div>
+      <div class="field"><label>Discharge vessel <span class="unit">psig</span></label><input type="number" id="Pd" value="50" step="any"></div>
+      <div class="field"><label>Discharge level above pump <span class="unit">ft</span></label><input type="number" id="Zd" value="30" step="any"></div>
+    </div>
+  </details>
+
+  <h2>Protection</h2>
+  <div class="field">
+    <label>Minimum-flow bypass (each pump, tee between pump and check valve, returns to the suction vessel)</label>
+    <select id="bypass">
+      <option value="none" selected>None installed</option>
+      <option value="orifice">Continuous bypass with restriction orifice</option>
+    </select>
+  </div>
+  <div class="field" id="bypassField" style="display:none;">
+    <label>Bypass design flow at rated head <span class="unit">gpm</span></label>
+    <input type="number" id="Qbd" step="any">
+    <div class="hint">Defaults to the continuous minimum flow. Flow scales with √head through the orifice.</div>
+  </div>
+  <div class="field">
+    <label>Safety instrumented trip on a deadheaded pump</label>
+    <select id="sis">
+      <option value="none" selected>None</option>
+      <option value="detect">Trip on deadhead detection (low motor current / low pump flow)</option>
+      <option value="temp">Trip on high casing temperature</option>
+    </select>
+  </div>
+  <div class="row2" id="sisFields" style="display:none;">
+    <div class="field"><label>Detection + trip time <span class="unit">s</span></label><input type="number" id="sisT" value="10" min="0" step="any"></div>
+    <div class="field" id="sisTempField"><label>Trip setpoint, rise above process <span class="unit">°F</span></label><input type="number" id="sisDT" value="10" min="0" step="any"></div>
+  </div>
+  <div class="field">
+    <label style="display:flex; align-items:center; gap:6px; color:var(--text);"><input type="checkbox" id="opOn" checked> Operator verifies the start (local PI, amps, header pressure rise)</label>
+  </div>
+  <div class="field" id="opField">
+    <label>Operator response time <span class="unit">min</span></label>
+    <input type="number" id="opT" value="10" min="0" step="any">
+    <div class="hint">10 min is a common LOPA minimum for crediting an operator response; use your site's own LOPA rules.</div>
+  </div>
+  <div class="field">
+    <label>Allowable temperature rise in the pump</label>
+    <select id="allowRise">
+      <option value="15" selected>15 °F — hot water / boiler feed (Karassik Ch. 15)</option>
+      <option value="50">50 °F — cold water, lower bound (Karassik Ch. 15)</option>
+      <option value="100">100 °F — cold water, upper bound (Karassik Ch. 15)</option>
+    </select>
+  </div>
+</div>
+
+<!-- ============================ RESULTS ============================ -->
+<div>
+  <div id="verdicts"></div>
+
+  <details class="resultPanel" id="panel-lift" open>
+    <summary>Will pump B's check valve lift? <span class="tag">Karassik Ch. 15 p.15.14</span></summary>
+    <div class="resultPanel-body">
+      <div class="grid3">
+        <div class="stat"><div class="v" id="o_H1"></div><div class="l">Header head before B starts (H₁)</div><div class="s" id="o_H1s"></div></div>
+        <div class="stat"><div class="v" id="o_HsoB"></div><div class="l">Pump B shutoff head, worn</div><div class="s" id="o_HsoBs"></div></div>
+        <div class="stat"><div class="v" id="o_lift"></div><div class="l">Lift margin</div><div class="s" id="o_lifts"></div></div>
+      </div>
+      <table style="margin-top:12px;">
+        <thead><tr><th>Worn curve</th><th class="num">Shutoff head</th><th class="num">Rise to shutoff</th><th>Shape</th></tr></thead>
+        <tbody id="o_rtso"></tbody>
+      </table>
+      <div class="hint">Rise to shutoff = shutoff head ÷ head at rated flow − 1. API 610 asks for ≥10% and a continuous rise when parallel operation is specified at purchase; it's a purchase requirement, so in service this table shows how far wear has moved each pump from it.</div>
+    </div>
+  </details>
+
+  <details class="resultPanel" id="panel-overlap" open>
+    <summary>Both pumps on line — the overlap <span class="tag">Karassik §2.1.3 Fig. 40</span></summary>
+    <div class="resultPanel-body">
+      <table>
+        <thead><tr><th></th><th class="num">To header</th><th class="num">Bypass</th><th class="num">Total pump flow</th><th class="num">% of BEP</th><th>vs. minimum flow</th><th class="num">Temp. rise</th></tr></thead>
+        <tbody id="o_table"></tbody>
+      </table>
+      <div class="grid3" style="margin-top:10px;">
+        <div class="stat"><div class="v" id="o_Hstar"></div><div class="l">Header head during overlap</div><div class="s" id="o_Hstars"></div></div>
+        <div class="stat"><div class="v" id="o_rise"></div><div class="l">Header pressure rise when B lifts</div><div class="s">field check: no rise = B is not delivering</div></div>
+        <div class="stat"><div class="v" id="o_Qtot"></div><div class="l">Total header flow</div><div class="s" id="o_Qtots"></div></div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px; margin-top:14px; flex-wrap:wrap;">
+        <span style="font-size:0.74rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:0.04em;">View</span>
+        <div role="group" aria-label="Chart view" style="display:inline-flex; border:1px solid var(--border); border-radius:3px; overflow:hidden;">
+          <button type="button" class="viewBtn active" data-view="operating">Operating region</button>
+          <button type="button" class="viewBtn" data-view="lowflow">Low-flow detail</button>
+          <button type="button" class="viewBtn" data-view="full">Full curve</button>
+        </div>
+      </div>
+      <svg class="chart" id="chartHQ" viewBox="0 0 640 340" style="margin-top:8px;"></svg>
+    </div>
+  </details>
+
+  <details class="resultPanel" id="panel-thermal" open>
+    <summary>Deadhead heating <span class="tag">Mockridge Eq. 67 · Karassik Ch. 15</span></summary>
+    <div class="resultPanel-body">
+      <div id="o_thermalNote"></div>
+      <div class="grid3">
+        <div class="stat"><div class="v" id="o_rate"></div><div class="l">Heating rate, no flow</div><div class="s" id="o_rates"></div></div>
+        <div class="stat"><div class="v" id="o_limit"></div><div class="l">Temperature limit</div><div class="s" id="o_limits"></div></div>
+        <div class="stat"><div class="v" id="o_tlim"></div><div class="l">Time to reach the limit, no flow</div><div class="s" id="o_tlims"></div></div>
+      </div>
+    </div>
+  </details>
+
+  <details class="resultPanel" id="panel-basis">
+    <summary>Basis, sources and limits</summary>
+    <div class="resultPanel-body" id="basisList"></div>
+  </details>
+</div>
+</div>
+
+<footer>
+  Built on Karassik, <em>Pump Handbook</em> 4th ed.: §2.1.1 (shutoff head Eq. 65/66, shutoff power Eq. 67 / Mockridge Fig. 23, minimum flow Table 16), §2.1.3 (parallel operation Fig. 40, wearing-ring clearance Table 3), §11.1 (system-head curves, starting against a check valve), §11.4 (minimum-flow bypass) and Ch. 15 (starting procedure, allowable temperature rise). Liquid heat capacity from <code>thermo</code>, with sulfuric acid from Perry's 9th ed. Table 2-91. Screening tool, not a substitute for the vendor's curves and minimum-flow data.
+</footer>
+
+<script>
+// =====================================================================================
+// Embedded data
+// =====================================================================================
+// Default pump = the Centrifugal Pump Sizing tool's output at its default inputs
+// (water 70 F, 500 gpm, 300 ft, NPSHa 20 ft, overhung; n_s ~1117, the case-study duty chosen
+// 2026-10-13 because it sizes cleanly yet sits where low rise to shutoff makes changeovers marginal).
+// Replaced by a hand-off in the URL hash.
+const DEFAULT_PUMP = {"v":1,"fluid":"water","T_F":70,"SG":1,"vp_psia":0.3634,"config":"overhung","Q_bep":500,"H_bep":300,"N_rpm":3600,"Ns":1117,"D2_in":8.706,"Q":[0,25,50,75,100,125,150,175,200,225,250,275,300,325,350,375,400,425,450,475,500,525,550,575,600,625,650,675],"H":[340.03,340.24,340.83,341.7,342.76,343.9,345.05,346.11,346.98,347.57,347.78,343.2,338.58,333.91,329.19,324.44,319.64,314.79,309.91,304.98,300,294.98,289.92,284.81,279.66,274.47,269.23,263.95],"P":[14.94,16.44,17.94,19.44,20.94,22.44,23.94,25.45,26.95,28.45,29.95,32.51,34.99,37.38,39.69,41.91,44.04,46.09,48.04,49.9,51.67,53.35,54.93,56.41,57.8,59.09,60.28,61.37],"Hso":340.03,"Hso_eq65":335.99,"Pso_hp":14.94,"bhp_bep":51.67,"Qmin_cont":205.3,"Qmin_int":143.7,"holdup_lb":2.847,"holdup_gal":0.3418};
+// Liquid heat capacity + vapor pressure by fluid: [T_F, vp_psia, cp_Btu_per_lb_F]. Generated by
+// generate_cp_table.py (thermo; sulfuric acid cp from Perry's 9th Table 2-91). cp null = outside the
+// liquid range (below melting point or at/above critical temperature).
+const CP_TABLE = {"water":[[-40,0.00274,null],[-35,0.00364,null],[-30,0.00481,null],[-25,0.0063,null],[-20,0.00819,null],[-15,0.01059,null],[-10,0.01359,null],[-5,0.01734,null],[0,0.022,null],[5,0.02774,null],[10,0.03479,null],[15,0.04341,null],[20,0.05387,null],[25,0.06652,null],[30,0.08174,null],[35,0.09998,1.0065],[40,0.12173,1.0047],[45,0.14757,1.0032],[50,0.17814,1.002],[55,0.21414,1.001],[60,0.2564,1.0003],[65,0.3058,0.9996],[70,0.36336,0.9992],[75,0.43017,0.9988],[80,0.50747,0.9985],[85,0.5966,0.9984],[90,0.69904,0.9982],[95,0.81642,0.9982],[100,0.95051,0.9982],[105,1.10323,0.9982],[110,1.27668,0.9983],[115,1.47313,0.9985],[120,1.69503,0.9986],[125,1.94502,0.9988],[130,2.22594,0.999],[135,2.54084,0.9993],[140,2.89298,0.9996],[145,3.28586,0.9999],[150,3.72318,1.0002],[155,4.20891,1.0006],[160,4.74723,1.0009],[165,5.34261,1.0014],[170,5.99976,1.0018],[175,6.72364,1.0023],[180,7.51951,1.0028],[185,8.39289,1.0033],[190,9.34958,1.0039],[195,10.39567,1.0045],[200,11.53755,1.0052],[205,12.78189,1.0059],[210,14.13566,1.0066],[215,15.60615,1.0074],[220,17.20094,1.0082],[225,18.92793,1.009],[230,20.79532,1.0099],[235,22.81162,1.0109],[240,24.98569,1.0119],[245,27.32666,1.0129],[250,29.844,1.014],[255,32.5475,1.0151],[260,35.44728,1.0163],[265,38.55374,1.0176],[270,41.87765,1.0189],[275,45.43007,1.0203],[280,49.22237,1.0217],[285,53.26627,1.0232],[290,57.57378,1.0247],[295,62.15723,1.0264],[300,67.02928,1.028],[305,72.20289,1.0298],[310,77.69132,1.0316],[315,83.50817,1.0335],[320,89.66732,1.0355],[325,96.18296,1.0375],[330,103.06961,1.0397],[335,110.34205,1.0419],[340,118.01539,1.0442],[345,126.10502,1.0465],[350,134.62663,1.049],[355,143.59622,1.0516],[360,153.03004,1.0542],[365,162.94465,1.057],[370,173.35692,1.0599],[375,184.28396,1.0628],[380,195.74319,1.0659],[385,207.75231,1.0691],[390,220.32927,1.0725],[395,233.49234,1.0759],[400,247.26003,1.0795]],"methanol":[[-40,0.02915,0.541],[-35,0.03723,0.5427],[-30,0.04727,0.5444],[-25,0.05965,0.5462],[-20,0.07484,0.548],[-15,0.09338,0.55],[-10,0.11588,0.5521],[-5,0.14307,0.5542],[0,0.17575,0.5565],[5,0.21484,0.5589],[10,0.26141,0.5613],[15,0.31663,0.5639],[20,0.38182,0.5666],[25,0.45849,0.5694],[30,0.5483,0.5723],[35,0.65308,0.5753],[40,0.77489,0.5784],[45,0.91598,0.5817],[50,1.07884,0.5851],[55,1.2662,0.5886],[60,1.48102,0.5922],[65,1.72657,0.5959],[70,2.00636,0.5998],[75,2.32423,0.6037],[80,2.68431,0.6078],[85,3.09107,0.612],[90,3.5493,0.6164],[95,4.06415,0.6208],[100,4.64116,0.6254],[105,5.2862,0.63],[110,6.00558,0.6348],[115,6.80597,0.6397],[120,7.69448,0.6447],[125,8.67863,0.6499],[130,9.76637,0.6551],[135,10.9661,0.6604],[140,12.28663,0.6659],[145,13.73728,0.6715],[150,15.32777,0.6771],[155,17.06835,0.6829],[160,18.96971,0.6888],[165,21.04304,0.6948],[170,23.30002,0.7009],[175,25.75284,0.7071],[180,28.41419,0.7135],[185,31.29726,0.7199],[190,34.41575,0.7265],[195,37.78387,0.7332],[200,41.41633,0.74],[205,45.32834,0.7469],[210,49.53561,0.754],[215,54.05433,0.7612],[220,58.9012,0.7686],[225,64.09342,0.7761],[230,69.64872,0.7837],[235,75.58534,0.7915],[240,81.92206,0.7995],[245,88.67825,0.8077],[250,95.87381,0.816],[255,103.52925,0.8245],[260,111.66564,0.8333],[265,120.3046,0.8422],[270,129.46831,0.8514],[275,139.17945,0.8609],[280,149.4612,0.8706],[285,160.33723,0.8806],[290,171.83165,0.8909],[295,183.96909,0.9015],[300,196.77464,0.9125],[305,210.27398,0.9239],[310,224.49333,0.9357],[315,239.45952,0.948],[320,255.19992,0.9607],[325,271.74236,0.9741],[330,289.11497,0.988],[335,307.34587,1.0026],[340,326.46287,1.018],[345,346.49308,1.0342],[350,367.46258,1.0514],[355,389.39624,1.0696],[360,412.31776,1.089],[365,436.25005,1.1098],[370,461.21609,1.1323],[375,487.24014,1.1563],[380,514.34938,1.1804],[385,542.57573,1.2045],[390,571.95757,1.2287],[395,602.54125,1.2528],[400,634.38194,1.277]],"ethanol":[[-40,0.00807,0.4891],[-35,0.01062,0.4919],[-30,0.01387,0.4948],[-25,0.01799,0.4978],[-20,0.0232,0.5008],[-15,0.02971,0.504],[-10,0.03783,0.5073],[-5,0.04789,0.5108],[0,0.06027,0.5143],[5,0.07544,0.5179],[10,0.09393,0.5216],[15,0.11635,0.5254],[20,0.14341,0.5293],[25,0.17591,0.5333],[30,0.21477,0.5374],[35,0.26103,0.5416],[40,0.31586,0.546],[45,0.38058,0.5504],[50,0.45667,0.555],[55,0.54578,0.5596],[60,0.64975,0.5644],[65,0.77063,0.5693],[70,0.91066,0.5743],[75,1.07234,0.5794],[80,1.2584,0.5846],[85,1.47181,0.5899],[90,1.71584,0.5954],[95,1.99403,0.6009],[100,2.31022,0.6066],[105,2.66857,0.6123],[110,3.07355,0.6182],[115,3.52998,0.6241],[120,4.04304,0.6302],[125,4.61826,0.6363],[130,5.26157,0.6426],[135,5.97931,0.6489],[140,6.7782,0.6553],[145,7.66541,0.6618],[150,8.64854,0.6684],[155,9.73561,0.6751],[160,10.9351,0.6819],[165,12.25593,0.6887],[170,13.70746,0.6957],[175,15.29949,0.7027],[180,17.04227,0.7099],[185,18.94648,0.7171],[190,21.02325,0.7244],[195,23.28416,0.7319],[200,25.74125,0.7395],[205,28.40703,0.7471],[210,31.29448,0.7549],[215,34.41707,0.7628],[220,37.78876,0.7708],[225,41.42397,0.779],[230,45.33759,0.7873],[235,49.54496,0.7957],[240,54.06179,0.8042],[245,58.90416,0.8128],[250,64.08845,0.8215],[255,69.63131,0.8303],[260,75.54963,0.8392],[265,81.86053,0.8482],[270,88.58138,0.8572],[275,95.72979,0.8663],[280,103.32371,0.8754],[285,111.38143,0.8845],[290,119.92166,0.8937],[295,128.96352,0.9028],[300,138.52656,0.9118],[305,148.63069,0.9208],[310,159.29608,0.9298],[315,170.54302,0.9388],[320,182.39181,0.9477],[325,194.86259,0.9566],[330,207.97528,0.9655],[335,221.74962,0.9745],[340,236.20529,0.9837],[345,251.36216,0.993],[350,267.24066,1.0026],[355,283.86211,1.0127],[360,301.2491,1.0233],[365,319.42555,1.0346],[370,338.41661,1.0469],[375,358.24817,1.0603],[380,378.9462,1.0742],[385,400.53584,1.0881],[390,423.0408,1.102],[395,446.48327,1.1159],[400,470.88468,1.1298]],"toluene":[[-40,0.0061,0.3648],[-35,0.00786,0.3662],[-30,0.01005,0.3676],[-25,0.01277,0.369],[-20,0.01612,0.3705],[-15,0.02023,0.372],[-10,0.02523,0.3736],[-5,0.03129,0.3752],[0,0.0386,0.3769],[5,0.04736,0.3785],[10,0.05781,0.3803],[15,0.07022,0.382],[20,0.08489,0.3838],[25,0.10214,0.3857],[30,0.12236,0.3875],[35,0.14595,0.3894],[40,0.17336,0.3913],[45,0.20509,0.3933],[50,0.24168,0.3952],[55,0.28373,0.3972],[60,0.33188,0.3993],[65,0.38682,0.4013],[70,0.44931,0.4034],[75,0.52016,0.4055],[80,0.60025,0.4076],[85,0.69051,0.4097],[90,0.79194,0.4119],[95,0.9056,0.414],[100,1.03263,0.4162],[105,1.17422,0.4184],[110,1.33166,0.4206],[115,1.50626,0.4229],[120,1.69946,0.4251],[125,1.91274,0.4274],[130,2.14766,0.4297],[135,2.40586,0.432],[140,2.68903,0.4343],[145,2.99897,0.4366],[150,3.33753,0.4389],[155,3.70665,0.4413],[160,4.10833,0.4437],[165,4.54466,0.446],[170,5.0178,0.4484],[175,5.52996,0.4508],[180,6.08347,0.4532],[185,6.68068,0.4556],[190,7.32405,0.4581],[195,8.01609,0.4605],[200,8.75938,0.463],[205,9.5566,0.4654],[210,10.41045,0.4679],[215,11.32372,0.4704],[220,12.29927,0.4729],[225,13.34002,0.4754],[230,14.44894,0.4779],[235,15.62909,0.4804],[240,16.88355,0.4829],[245,18.2155,0.4855],[250,19.62816,0.488],[255,21.1248,0.4906],[260,22.70875,0.4932],[265,24.38341,0.4958],[270,26.15222,0.4984],[275,28.01866,0.501],[280,29.98629,0.5036],[285,32.0587,0.5063],[290,34.23955,0.5089],[295,36.53251,0.5116],[300,38.94135,0.5143],[305,41.46985,0.517],[310,44.12185,0.5198],[315,46.90124,0.5225],[320,49.81195,0.5253],[325,52.85796,0.5281],[330,56.0433,0.5309],[335,59.37205,0.5337],[340,62.84832,0.5366],[345,66.47628,0.5395],[350,70.26015,0.5424],[355,74.2042,0.5454],[360,78.31274,0.5484],[365,82.59013,0.5514],[370,87.0408,0.5545],[375,91.66922,0.5576],[380,96.4799,0.5607],[385,101.47745,0.5639],[390,106.66649,0.5672],[395,112.05174,0.5705],[400,117.63796,0.5739]],"benzene":[[-40,0.03606,null],[-35,0.04462,null],[-30,0.05495,null],[-25,0.06734,null],[-20,0.08215,null],[-15,0.09977,null],[-10,0.12064,null],[-5,0.14528,null],[0,0.17423,null],[5,0.20815,null],[10,0.24772,null],[15,0.29374,null],[20,0.34707,null],[25,0.40868,null],[30,0.47962,null],[35,0.56105,null],[40,0.65425,null],[45,0.76053,0.4034],[50,0.88098,0.4049],[55,1.017,0.4065],[60,1.17011,0.4082],[65,1.34194,0.4099],[70,1.53423,0.4116],[75,1.74878,0.4134],[80,1.98752,0.4152],[85,2.25249,0.417],[90,2.54579,0.4189],[95,2.86967,0.4208],[100,3.22644,0.4227],[105,3.61855,0.4247],[110,4.04853,0.4267],[115,4.519,0.4287],[120,5.03271,0.4308],[125,5.59249,0.4328],[130,6.20127,0.4349],[135,6.86207,0.437],[140,7.57803,0.4392],[145,8.35235,0.4413],[150,9.18835,0.4435],[155,10.08943,0.4457],[160,11.05907,0.4479],[165,12.10085,0.4501],[170,13.21843,0.4524],[175,14.41554,0.4546],[180,15.69602,0.4569],[185,17.06374,0.4592],[190,18.5227,0.4615],[195,20.07694,0.4638],[200,21.73058,0.4662],[205,23.4878,0.4685],[210,25.35288,0.4709],[215,27.33012,0.4733],[220,29.42391,0.4757],[225,31.63869,0.4781],[230,33.97899,0.4806],[235,36.44935,0.483],[240,39.05441,0.4855],[245,41.79884,0.488],[250,44.68736,0.4905],[255,47.72476,0.493],[260,50.91588,0.4956],[265,54.2656,0.4982],[270,57.77884,0.5008],[275,61.46059,0.5034],[280,65.31588,0.506],[285,69.34978,0.5087],[290,73.56741,0.5114],[295,77.97393,0.5142],[300,82.57458,0.517],[305,87.3746,0.5198],[310,92.37931,0.5227],[315,97.59407,0.5256],[320,103.02429,0.5285],[325,108.67542,0.5315],[330,114.55299,0.5345],[335,120.66255,0.5377],[340,127.00972,0.5408],[345,133.60017,0.5441],[350,140.43965,0.5474],[355,147.53394,0.5507],[360,154.88892,0.5542],[365,162.51052,0.5578],[370,170.40477,0.5614],[375,178.57774,0.5652],[380,187.03564,0.5691],[385,195.78472,0.5731],[390,204.83135,0.5772],[395,214.182,0.5815],[400,223.84326,0.586]],"hexane":[[-40,0.0658,0.4902],[-35,0.08148,0.4919],[-30,0.10032,0.4936],[-25,0.1228,0.4954],[-20,0.14952,0.4972],[-15,0.18108,0.4991],[-10,0.21821,0.5011],[-5,0.26167,0.5031],[0,0.31232,0.5051],[5,0.37108,0.5073],[10,0.43897,0.5094],[15,0.51709,0.5116],[20,0.60665,0.5139],[25,0.70892,0.5162],[30,0.82529,0.5186],[35,0.95724,0.521],[40,1.10636,0.5234],[45,1.27435,0.5259],[50,1.46298,0.5284],[55,1.67417,0.531],[60,1.90991,0.5336],[65,2.17234,0.5363],[70,2.46367,0.539],[75,2.78624,0.5417],[80,3.14249,0.5444],[85,3.53499,0.5472],[90,3.96639,0.5501],[95,4.43947,0.553],[100,4.95711,0.5559],[105,5.52231,0.5588],[110,6.13814,0.5618],[115,6.80782,0.5648],[120,7.53463,0.5678],[125,8.32199,0.5709],[130,9.17339,0.574],[135,10.09244,0.5771],[140,11.08282,0.5802],[145,12.14832,0.5834],[150,13.29282,0.5866],[155,14.5203,0.5899],[160,15.8348,0.5932],[165,17.24048,0.5965],[170,18.74156,0.5998],[175,20.34235,0.6032],[180,22.04724,0.6066],[185,23.86069,0.61],[190,25.78727,0.6135],[195,27.83157,0.617],[200,29.99831,0.6205],[205,32.29225,0.6241],[210,34.71823,0.6277],[215,37.28116,0.6314],[220,39.98601,0.6351],[225,42.83785,0.6388],[230,45.84178,0.6426],[235,49.00301,0.6465],[240,52.32679,0.6504],[245,55.81845,0.6544],[250,59.4834,0.6584],[255,63.32713,0.6625],[260,67.35518,0.6667],[265,71.57319,0.6709],[270,75.98686,0.6752],[275,80.602,0.6797],[280,85.42448,0.6842],[285,90.46028,0.6888],[290,95.71546,0.6936],[295,101.1962,0.6985],[300,106.90878,0.7035],[305,112.85959,0.7087],[310,119.05514,0.714],[315,125.50206,0.7196],[320,132.20711,0.7254],[325,139.17719,0.7314],[330,146.41932,0.7377],[335,153.94065,0.7443],[340,161.74851,0.7512],[345,169.85038,0.7585],[350,178.25393,0.7663],[355,186.96704,0.7745],[360,195.99785,0.7834],[365,205.3548,0.7928],[370,215.04664,0.8024],[375,225.08252,0.812],[380,235.47201,0.8216],[385,246.22513,0.8312],[390,257.35246,0.8407],[395,268.86521,0.8503],[400,280.77533,0.8599]],"acetone":[[-40,0.10468,0.4844],[-35,0.12922,0.4851],[-30,0.1586,0.4859],[-25,0.1936,0.4867],[-20,0.23507,0.4876],[-15,0.28396,0.4885],[-10,0.34135,0.4894],[-5,0.40838,0.4904],[0,0.48635,0.4914],[5,0.57665,0.4924],[10,0.68081,0.4935],[15,0.80048,0.4946],[20,0.93747,0.4958],[25,1.0937,0.497],[30,1.27124,0.4982],[35,1.47233,0.4995],[40,1.69935,0.5009],[45,1.95481,0.5022],[50,2.24143,0.5036],[55,2.56204,0.5051],[60,2.91967,0.5065],[65,3.31749,0.508],[70,3.75884,0.5096],[75,4.24724,0.5112],[80,4.78636,0.5128],[85,5.38005,0.5145],[90,6.03231,0.5162],[95,6.74733,0.5179],[100,7.52943,0.5197],[105,8.38314,0.5216],[110,9.3131,0.5234],[115,10.32417,0.5253],[120,11.42132,0.5273],[125,12.60969,0.5292],[130,13.8946,0.5313],[135,15.28149,0.5333],[140,16.77596,0.5354],[145,18.38377,0.5376],[150,20.11082,0.5397],[155,21.96315,0.542],[160,23.94694,0.5442],[165,26.06852,0.5465],[170,28.33434,0.5489],[175,30.751,0.5513],[180,33.32522,0.5538],[185,36.06386,0.5563],[190,38.97391,0.5588],[195,42.06248,0.5614],[200,45.33681,0.5641],[205,48.80427,0.5668],[210,52.47233,0.5696],[215,56.34861,0.5724],[220,60.44086,0.5753],[225,64.75691,0.5783],[230,69.30477,0.5814],[235,74.09253,0.5845],[240,79.12844,0.5877],[245,84.42085,0.591],[250,89.97827,0.5944],[255,95.80932,0.5979],[260,101.92276,0.6014],[265,108.3275,0.6051],[270,115.03258,0.6089],[275,122.04719,0.6129],[280,129.38067,0.6169],[285,137.04254,0.6211],[290,145.04246,0.6255],[295,153.39028,0.63],[300,162.09603,0.6347],[305,171.16995,0.6397],[310,180.62249,0.6448],[315,190.4643,0.6502],[320,200.70629,0.6558],[325,211.35961,0.6617],[330,222.43568,0.668],[335,233.9462,0.6746],[340,245.90316,0.6817],[345,258.31892,0.6892],[350,271.20616,0.6972],[355,284.57799,0.7058],[360,298.44795,0.7152],[365,312.8301,0.7252],[370,327.73901,0.7355],[375,343.1899,0.7458],[380,359.19862,0.7561],[385,375.78177,0.7664],[390,392.95672,0.7766],[395,410.74177,0.7869],[400,429.15626,0.7972]],"MEK":[[-40,0.02947,0.5019],[-35,0.03687,0.5026],[-30,0.04588,0.5033],[-25,0.05682,0.5041],[-20,0.07002,0.5049],[-15,0.08588,0.5058],[-10,0.10486,0.5066],[-5,0.12747,0.5075],[0,0.1543,0.5084],[5,0.18594,0.5094],[10,0.22303,0.5103],[15,0.26634,0.5113],[20,0.3167,0.5124],[25,0.37502,0.5134],[30,0.4423,0.5145],[35,0.51964,0.5156],[40,0.6082,0.5167],[45,0.70928,0.5179],[50,0.82426,0.5191],[55,0.95461,0.5203],[60,1.10193,0.5216],[65,1.26793,0.5228],[70,1.45442,0.5242],[75,1.66334,0.5255],[80,1.89674,0.5269],[85,2.15679,0.5282],[90,2.44578,0.5297],[95,2.76614,0.5311],[100,3.1204,0.5326],[105,3.51124,0.5341],[110,3.94144,0.5357],[115,4.41393,0.5372],[120,4.93175,0.5388],[125,5.49807,0.5405],[130,6.1162,0.5421],[135,6.78954,0.5438],[140,7.52164,0.5455],[145,8.31617,0.5473],[150,9.17692,0.5491],[155,10.1078,0.5509],[160,11.11282,0.5527],[165,12.19613,0.5546],[170,13.36198,0.5565],[175,14.61474,0.5584],[180,15.95888,0.5604],[185,17.39899,0.5624],[190,18.93977,0.5643],[195,20.58599,0.5663],[200,22.34257,0.5682],[205,24.21449,0.5702],[210,26.20685,0.5721],[215,28.32484,0.5741],[220,30.57375,0.5761],[225,32.95895,0.578],[230,35.48592,0.58],[235,38.16022,0.5819],[240,40.98749,0.5839],[245,43.97348,0.5859],[250,47.12402,0.5878],[255,50.44502,0.5898],[260,53.9425,0.5917],[265,57.62255,0.5937],[270,61.49135,0.5957],[275,65.55517,0.5976],[280,69.8204,0.5996],[285,74.29349,0.6015],[290,78.981,0.6035],[295,83.88959,0.6054],[300,89.02603,0.6074],[305,94.39716,0.6094],[310,100.00998,0.6113],[315,105.87158,0.6133],[320,111.98915,0.6152],[325,118.37004,0.6172],[330,125.02172,0.6192],[335,131.95178,0.6211],[340,139.16798,0.6231],[345,146.67823,0.625],[350,154.49059,0.627],[355,162.61331,0.6289],[360,171.05481,0.6309],[365,179.82372,0.6329],[370,188.92887,0.6348],[375,198.37933,0.6368],[380,208.1844,0.6387],[385,218.35364,0.6407],[390,228.89688,0.6427],[395,239.82427,0.6446],[400,251.14626,0.6466]],"ethylene glycol":[[-40,0.0,null],[-35,0.0,null],[-30,0.0,null],[-25,0.0,null],[-20,0.0,null],[-15,1e-05,null],[-10,1e-05,null],[-5,1e-05,null],[0,2e-05,null],[5,3e-05,null],[10,4e-05,0.5351],[15,5e-05,0.5379],[20,7e-05,0.5407],[25,9e-05,0.5436],[30,0.00013,0.5466],[35,0.00018,0.5496],[40,0.00024,0.5527],[45,0.00031,0.5558],[50,0.00042,0.5589],[55,0.00055,0.562],[60,0.00072,0.5652],[65,0.00094,0.5684],[70,0.00122,0.5716],[75,0.00157,0.5748],[80,0.00201,0.578],[85,0.00256,0.5812],[90,0.00325,0.5844],[95,0.0041,0.5877],[100,0.00514,0.5909],[105,0.00643,0.5941],[110,0.00799,0.5973],[115,0.0099,0.6005],[120,0.01221,0.6037],[125,0.015,0.6069],[130,0.01834,0.61],[135,0.02235,0.6132],[140,0.02712,0.6163],[145,0.03279,0.6194],[150,0.0395,0.6226],[155,0.04741,0.6257],[160,0.05671,0.6288],[165,0.0676,0.6318],[170,0.08032,0.6349],[175,0.09513,0.6379],[180,0.11232,0.641],[185,0.1322,0.644],[190,0.15514,0.647],[195,0.18154,0.65],[200,0.21182,0.653],[205,0.24648,0.6559],[210,0.28602,0.6589],[215,0.33104,0.6618],[220,0.38216,0.6647],[225,0.44006,0.6676],[230,0.5055,0.6705],[235,0.57928,0.6734],[240,0.66227,0.6762],[245,0.75543,0.6791],[250,0.85976,0.6819],[255,0.97638,0.6848],[260,1.10644,0.6876],[265,1.25123,0.6904],[270,1.41208,0.6932],[275,1.59044,0.696],[280,1.78784,0.6988],[285,2.00592,0.7016],[290,2.24641,0.7043],[295,2.51116,0.7071],[300,2.80213,0.7098],[305,3.12136,0.7126],[310,3.47104,0.7153],[315,3.85347,0.7181],[320,4.27106,0.7208],[325,4.72636,0.7235],[330,5.22204,0.7263],[335,5.76088,0.729],[340,6.34583,0.7317],[345,6.97995,0.7344],[350,7.66643,0.7372],[355,8.40863,0.7399],[360,9.21003,0.7426],[365,10.07425,0.7454],[370,11.00506,0.7481],[375,12.00639,0.7508],[380,13.08229,0.7536],[385,14.237,0.7563],[390,15.47487,0.7591],[395,16.80044,0.7619],[400,18.21837,0.7647]],"ammonia":[[-40,10.38952,1.0605],[-35,12.03281,1.063],[-30,13.88169,1.0655],[-25,15.95463,1.068],[-20,18.27099,1.0706],[-15,20.85105,1.0731],[-10,23.71596,1.0757],[-5,26.88776,1.0784],[0,30.38935,1.0811],[5,34.24449,1.0839],[10,38.47777,1.0868],[15,43.11457,1.0898],[20,48.1811,1.093],[25,53.70434,1.0962],[30,59.71203,1.0996],[35,66.23265,1.1032],[40,73.29541,1.1069],[45,80.93024,1.1108],[50,89.16774,1.115],[55,98.03921,1.1193],[60,107.57658,1.124],[65,117.81246,1.1288],[70,128.78006,1.134],[75,140.51323,1.1394],[80,153.04643,1.1452],[85,166.4147,1.1513],[90,180.65369,1.1578],[95,195.79966,1.1647],[100,211.88942,1.1721],[105,228.9604,1.1799],[110,247.05058,1.1883],[115,266.19858,1.1972],[120,286.44359,1.2067],[125,307.82543,1.2168],[130,330.38457,1.2278],[135,354.16214,1.2395],[140,379.19996,1.2521],[145,405.54059,1.2658],[150,433.22734,1.2805],[155,462.30436,1.2966],[160,492.81668,1.314],[165,524.81027,1.3331],[170,558.33218,1.3541],[175,593.43059,1.3773],[180,630.15498,1.403],[185,668.55625,1.4316],[190,708.6869,1.4638],[195,750.60118,1.5002],[200,794.35538,1.5409],[205,840.0081,1.5822],[210,887.62066,1.6235],[215,937.25755,1.6648],[220,988.9871,1.7062],[225,1042.88216,1.7475],[230,1099.02109,1.7888],[235,1157.48916,1.8301],[240,1218.38057,1.8714],[245,1281.80182,1.9127],[250,1347.87677,1.954],[255,1416.75491,1.9953],[260,1488.62718,2.0367],[265,1563.76521,2.078],[270,1642.63431,2.1193],[275,1726.01369,null],[280,1814.36711,null],[285,1907.99385,null],[290,2007.21158,null],[295,2112.35752,null],[300,2223.78964,null],[305,2341.8879,null],[310,2467.05557,null],[315,2599.72063,null],[320,2740.33725,null],[325,2889.38737,null],[330,3047.38239,null],[335,3214.86487,null],[340,3392.41048,null],[345,3580.62991,null],[350,3780.17098,null],[355,3991.7209,null],[360,4216.00855,null],[365,4453.80701,null],[370,4705.93616,null],[375,4973.26548,null],[380,5256.71698,null],[385,5557.2683,null],[390,5875.95601,null],[395,6213.87911,null],[400,6572.20267,null]],"propane":[[-40,16.11685,0.5388],[-35,18.14373,0.542],[-30,20.36264,0.5452],[-25,22.7854,0.5486],[-20,25.42407,0.552],[-15,28.29101,0.5556],[-10,31.3988,0.5593],[-5,34.76023,0.5631],[0,38.38832,0.567],[5,42.29629,0.5711],[10,46.49752,0.5753],[15,51.00556,0.5796],[20,55.83417,0.5841],[25,60.99724,0.5887],[30,66.50891,0.5935],[35,72.38345,0.5985],[40,78.6354,0.6037],[45,85.27945,0.609],[50,92.33049,0.6146],[55,99.80358,0.6204],[60,107.71393,0.6265],[65,116.07686,0.6329],[70,124.90783,0.6395],[75,134.22248,0.6465],[80,144.03661,0.6538],[85,154.36632,0.6616],[90,165.22804,0.6698],[95,176.6386,0.6785],[100,188.61526,0.6878],[105,201.17572,0.6977],[110,214.33803,0.7084],[115,228.1206,0.72],[120,242.54211,0.7325],[125,257.62163,0.7463],[130,273.37877,0.7614],[135,289.83401,0.7782],[140,307.00907,0.7971],[145,324.92725,0.817],[150,343.61354,0.8369],[155,363.09445,0.8568],[160,383.39768,0.8766],[165,404.55194,0.8965],[170,426.58752,0.9164],[175,449.53832,0.9363],[180,473.44514,0.9562],[185,498.35878,0.976],[190,524.34033,0.9959],[195,551.45864,1.0158],[200,579.80256,1.0357],[205,609.58237,1.0556],[210,641.40194,null],[215,675.71615,null],[220,712.71851,null],[225,752.61672,null],[230,795.63662,null],[235,842.02369,null],[240,892.0447,null],[245,945.98956,null],[250,1004.17326,null],[255,1066.93805,null],[260,1134.6558,null],[265,1207.73051,null],[270,1286.60115,null],[275,1371.7447,null],[280,1463.67939,null],[285,1562.96839,null],[290,1670.22365,null],[295,1786.11023,null],[300,1911.3509,null],[305,2046.73123,null],[310,2193.10508,null],[315,2351.40059,null],[320,2522.62671,null],[325,2707.8803,null],[330,2908.35383,null],[335,3125.34384,null],[340,3360.26003,null],[345,3614.63525,null],[350,3890.13631,null],[355,4188.5758,null],[360,4511.92488,null],[365,4862.32727,null],[370,5242.11438,null],[375,5653.82185,null],[380,6100.20755,null],[385,6584.27104,null],[390,7109.27489,null],[395,7678.76776,null],[400,8296.60955,null]],"sulfuric acid":[[-40,0.0,0.3694883720930232],[-35,0.0,0.3694883720930232],[-30,0.0,0.3694883720930232],[-25,0.0,0.3694883720930232],[-20,0.0,0.3694883720930232],[-15,0.0,0.3694883720930232],[-10,0.0,0.3694883720930232],[-5,0.0,0.3694883720930232],[0,0.0,0.3694883720930232],[5,0.0,0.3694883720930232],[10,0.0,0.3694883720930232],[15,0.0,0.3694883720930232],[20,0.0,0.3694883720930232],[25,0.0,0.3694883720930232],[30,0.0,0.3694883720930232],[35,0.0,0.3694883720930232],[40,0.0,0.3694883720930232],[45,0.0,0.3694883720930232],[50,0.0,0.3694883720930232],[55,0.0,0.3694883720930232],[60,0.0,0.3694883720930232],[65,0.0,0.3694883720930232],[70,1e-06,0.3694883720930232],[75,1e-06,0.3694883720930232],[80,1e-06,0.3694883720930232],[85,2e-06,0.3694883720930232],[90,2e-06,0.3694883720930232],[95,3e-06,0.3694883720930232],[100,4e-06,0.3694883720930232],[105,6e-06,0.3694883720930232],[110,8e-06,0.3694883720930232],[115,1e-05,0.3694883720930232],[120,1.4e-05,0.3694883720930232],[125,1.8e-05,0.3694883720930232],[130,2.4e-05,0.3694883720930232],[135,3.2e-05,0.3694883720930232],[140,4.2e-05,0.3694883720930232],[145,5.4e-05,0.3694883720930232],[150,6.9e-05,0.3694883720930232],[155,8.9e-05,0.3694883720930232],[160,0.000114,0.3694883720930232],[165,0.000145,0.3694883720930232],[170,0.000183,0.3694883720930232],[175,0.000231,0.3694883720930232],[180,0.00029,0.3694883720930232],[185,0.000362,0.3694883720930232],[190,0.000451,0.3694883720930232],[195,0.000559,0.3694883720930232],[200,0.000691,0.3694883720930232],[205,0.00085,0.3694883720930232],[210,0.001041,0.3694883720930232],[215,0.001271,0.3694883720930232],[220,0.001547,0.3694883720930232],[225,0.001876,0.3694883720930232],[230,0.002268,0.3694883720930232],[235,0.002732,0.3694883720930232],[240,0.00328,0.3694883720930232],[245,0.003927,0.3694883720930232],[250,0.004686,0.3694883720930232],[255,0.005575,0.3694883720930232],[260,0.006614,0.3694883720930232],[265,0.007824,0.3694883720930232],[270,0.009229,0.3694883720930232],[275,0.010857,0.3694883720930232],[280,0.012738,0.3694883720930232],[285,0.014906,0.3694883720930232],[290,0.017398,0.3694883720930232],[295,0.020257,0.3694883720930232],[300,0.023527,0.3694883720930232],[305,0.027261,0.3694883720930232],[310,0.031512,0.3694883720930232],[315,0.036344,0.3694883720930232],[320,0.041822,0.3694883720930232],[325,0.048021,0.3694883720930232],[330,0.05502,0.3694883720930232],[335,0.062906,0.3694883720930232],[340,0.071775,0.3694883720930232],[345,0.08173,0.3694883720930232],[350,0.092881,0.3694883720930232],[355,0.10535,0.3694883720930232],[360,0.119267,0.3694883720930232],[365,0.134771,0.3694883720930232],[370,0.152015,0.3694883720930232],[375,0.171159,0.3694883720930232],[380,0.192378,0.3694883720930232],[385,0.215858,0.3694883720930232],[390,0.241797,0.3694883720930232],[395,0.270409,0.3694883720930232],[400,0.301919,0.3694883720930232]]};
+
+// Karassik §2.1.3 Table 3 (p.2.131, Flowserve data, n_s 2100 / 63 ft pump): head vs wearing-ring
+// clearance. Columns: c/c0, shutoff head factor H0, BEP head factor H. (Printed column headers look
+// swapped; Q/H/P/eta only make sense as BEP values and H0/P0 as shutoff values.)
+const WEAR_TABLE3 = [[1.00,1.000,1.000],[1.78,0.970,0.983],[3.56,0.936,0.975],[6.88,0.912,0.960],[13.75,0.888,0.943]];
+const HP_TO_BTU_MIN = 42.4072, GPM_TO_LB_MIN_WATER = 8.3454, PSI_PER_FT_WATER = 1/2.31, P_ATM = 14.696;
+const STATIC92 = 344/372;   // Karassik §11.1 Example 1: fixed head ~344 ft of 372 ft total at design flow
+const C_MAX = 4;            // wear-ring clearance ratio cap: 2x the Karassik p.2.131 replacement point
+// Pump scope: the same single-stage centrifugal bounds the sizing tool screens with (Q/H rectangle from
+// Pump Selection Guidelines.png, the two corner flags, and the Fig. 12 radial/mixed Omega_s range).
+// A pump outside them is refused, not simulated.
+const SCOPE = {Qmin:10, Qmax:10000, Hmin:15, Hmax:1000, omMin:0.2, omMax:1.6, NS_PER_OMEGA:2733,
+  cornerPD:{Q:50, H:500}, cornerAxial:{Q:3000, H:30}};
+function pumpScopeErrors(p){
+  const e=[], om=p.Ns/SCOPE.NS_PER_OMEGA;
+  if(p.stages!=null && p.stages!==1) e.push(`${p.stages} stages: this tool covers single-stage pumps only.`);
+  if(p.config && !['overhung','between_bearings'].includes(p.config)) e.push(`configuration "${p.config}" is not one the sizing tool produces.`);
+  if(!(p.Q_bep>=SCOPE.Qmin && p.Q_bep<=SCOPE.Qmax)) e.push(`rated flow ${fmt(p.Q_bep,0)} gpm is outside the single-stage centrifugal range (${SCOPE.Qmin}–${fmt(SCOPE.Qmax,0)} gpm).`);
+  if(!(p.H_bep>=SCOPE.Hmin && p.H_bep<=SCOPE.Hmax)) e.push(`rated head ${fmt(p.H_bep,0)} ft is outside the single-stage centrifugal range (${SCOPE.Hmin}–${fmt(SCOPE.Hmax,0)} ft); higher heads need a multistage pump.`);
+  if(p.Q_bep<SCOPE.cornerPD.Q && p.H_bep>SCOPE.cornerPD.H) e.push(`under ${SCOPE.cornerPD.Q} gpm at over ${SCOPE.cornerPD.H} ft is positive-displacement (metering) territory.`);
+  if(p.Q_bep>SCOPE.cornerAxial.Q && p.H_bep<SCOPE.cornerAxial.H) e.push(`over ${fmt(SCOPE.cornerAxial.Q,0)} gpm at under ${SCOPE.cornerAxial.H} ft is axial-flow territory.`);
+  if(!(om>=SCOPE.omMin)) e.push(`Ω<sub>s</sub> ${fmt(om,2)} (n<sub>s</sub> ${fmt(p.Ns,0)}) is below ${SCOPE.omMin}: too much head per stage for one impeller (multistage or PD).`);
+  else if(!(om<=SCOPE.omMax)) e.push(`Ω<sub>s</sub> ${fmt(om,2)} (n<sub>s</sub> ${fmt(p.Ns,0)}) is above ${SCOPE.omMax}: axial-flow, which the sizing method doesn't cover.`);
+  return e;
+}
+
+// =====================================================================================
+// Calculation engine (pure: no DOM)
+// =====================================================================================
+function interp(xs, ys, x){
+  if(x<=xs[0]) return ys[0];
+  for(let i=1;i<xs.length;i++) if(x<=xs[i]) return ys[i-1]+(ys[i]-ys[i-1])*(x-xs[i-1])/(xs[i]-xs[i-1]);
+  const n=xs.length;   // linear extrapolation past the last point (runout)
+  return ys[n-1]+(ys[n-1]-ys[n-2])*(x-xs[n-1])/(xs[n-1]-xs[n-2]);
+}
+function wearFactors(c){
+  const t=WEAR_TABLE3, x=Math.min(Math.max(c,t[0][0]),t[t.length-1][0]);
+  for(let i=1;i<t.length;i++) if(x<=t[i][0]){
+    const f=(x-t[i-1][0])/(t[i][0]-t[i-1][0]);
+    return {f0:t[i-1][1]+f*(t[i][1]-t[i-1][1]), fb:t[i-1][2]+f*(t[i][2]-t[i-1][2])};
+  }
+  return {f0:t[t.length-1][1], fb:t[t.length-1][2]};
+}
+// Worn head curve: new curve x head factor tapering from the shutoff factor at Q=0 to the BEP factor
+// at Q_BEP (held beyond). The taper is this tool's construction, fitted to Table 3's two columns.
+// Worn head curve: the sizing tool's curve as computed (1-D above 0.5*Q_BEP, blended into the Eq. 65
+// shutoff below) x a head factor that tapers from Table 3's shutoff factor at Q=0 to its BEP factor
+// at Q_BEP. Where the curve droops near shutoff (head rising with flow up to a peak) it has two
+// branches at the same head:
+//   left  branch, 0 .. Q_pk     : head rises from the shutoff head to the peak (unstable in parallel)
+//   right branch, Q_pk .. runout: head falls from the peak (the stable operating branch)
+// A curve with no droop has Q_pk = 0 and only the right branch.
+function makePumpCurve(pump, c){
+  const {f0,fb}=wearFactors(c);
+  const H = Q => interp(pump.Q,pump.H,Q)*(f0+(fb-f0)*Math.min(Q/pump.Q_bep,1));
+  const Qlast = pump.Q[pump.Q.length-1], Qend = Qlast*1.25, N=600;
+  let kpk=0, hpk=H(0);
+  for(let i=1;i<=N;i++){ const v=H(Qend*i/N); if(v>hpk){ hpk=v; kpk=i; } }
+  const Qpk=Qend*kpk/N, Hpk=hpk, Hso=H(0);
+  // flow at head Hh on a monotone stretch [a,b] of the curve, by bisection on the curve itself
+  const solveQ=(a,b,Hh)=>{ const rising=H(b)>H(a); let lo=a, hi=b;
+    for(let k=0;k<64;k++){ const mid=(lo+hi)/2, v=H(mid); if(rising ? v<Hh : v>Hh) lo=mid; else hi=mid; }
+    return (lo+hi)/2; };
+  const Hend=H(Qend);
+  const Qr = Hh => Hh>Hpk ? null : (Hh<=Hend ? Qend : solveQ(Qpk,Qend,Hh));       // stable branch
+  const Ql = Hh => (kpk===0 || Hh<Hso || Hh>Hpk) ? null : solveQ(0,Qpk,Hh);      // drooping branch
+  const Hr = H(pump.Q_bep);
+  return {H, Qr, Ql, Qpk, Hpk, Hso, Qlast, Qend, f0, fb, c,
+    rtso:(Hso/Hr-1)*100, continuous: kpk===0, droop:(Hpk/Hso-1)*100};
+}
+
+// The sizing tool's low-flow blend rebuilt for a different shutoff head: same construction (cubic
+// Hermite from the shutoff head with zero slope at Q=0 into the 1-D curve's value and slope at
+// 0.5*Q_BEP, Fritsch-Carlson limited, end slope 0 when the shutoff isn't above the half-flow head).
+// Reproduces the handed-over curve to ~0.003 ft at the central shutoff. Used for the k_ex band and
+// for a vendor shutoff head.
+function pumpWithShutoff(pump, Hso){
+  const Q=pump.Q, H=pump.H.slice(), k=Q.findIndex(q=>q>=0.5*pump.Q_bep-1e-9);
+  if(k<1 || k>=Q.length-1) return {...pump, Hso};
+  const x1=Q[k], H1=H[k]; let m1=(H[k+1]-H[k])/(Q[k+1]-Q[k]); const sec=(H1-Hso)/x1;
+  if(sec<0 && m1<0 && m1/sec>3) m1=3*sec;
+  if(sec>=0) m1=0;
+  for(let i=0;i<k;i++){ const t=Q[i]/x1; H[i]=(2*t*t*t-3*t*t+1)*Hso+(-2*t*t*t+3*t*t)*H1+(t*t*t-t*t)*x1*m1; }
+  return {...pump, H, Hso};
+}
+// Shutoff head is set mainly by the casing (volute throat, impeller-to-tongue gap), which the sizing
+// tool doesn't resolve: Karassik Eq. 65 gives k_ex = 0.2 +/- 0.1, and Stepanoff (1957; casing chapter,
+// Reference Material PDF p.70) reports a 10% shutoff-head change from impeller position alone (n_s 1700). So results are run at the low, central and
+// high shutoff estimates, or once at a vendor's tested shutoff head when one is entered.
+function simulateBand(pump, inp){
+  // One method (Stepanoff psi_s/o = 0.585, from the sizing tool), or the vendor's tested shutoff head.
+  const variants = inp.vendorHso>0
+    ? [{label:'Vendor shutoff head', p:pumpWithShutoff(pump, inp.vendorHso), primary:true}]
+    : [{label:'Stepanoff psi 0.585', p:pump, primary:true}];
+  const rows = variants.map(v=>({label:v.label, Hso:v.p.Hso, p:v.p, r:simulate(v.p, inp), primary:!!v.primary}));
+  return {rows, primary: rows.find(x=>x.primary).r, vendor: inp.vendorHso>0};
+}
+function fluidProps(pump, T){
+  const rows = CP_TABLE[pump.fluid];
+  if(!rows) return {cp:null, vpCurve:null};
+  const Ts=rows.map(r=>r[0]), vps=rows.map(r=>r[1]);
+  let cp=null;
+  for(let i=1;i<rows.length;i++) if(T<=rows[i][0]){
+    const a=rows[i-1][2], b=rows[i][2];
+    if(a!=null && b!=null) cp=a+(b-a)*(T-rows[i-1][0])/(rows[i][0]-rows[i-1][0]);
+    break;
+  }
+  return {cp, Ts, vps};
+}
+function flashTemp(fp, P_abs){    // temperature where vapor pressure reaches P_abs (null if beyond table)
+  for(let i=1;i<fp.Ts.length;i++) if(fp.vps[i]>=P_abs){
+    const a=fp.vps[i-1], b=fp.vps[i];
+    return fp.Ts[i-1]+(fp.Ts[i]-fp.Ts[i-1])*(P_abs-a)/(b-a);
+  }
+  return null;
+}
+function bisect(f, lo, hi, n=80){   // f decreasing; returns x with f(x)=0
+  let flo=f(lo), fhi=f(hi);
+  if(flo<0) return {x:lo, ok:false}; if(fhi>0) return {x:hi, ok:false};
+  for(let i=0;i<n;i++){ const m=(lo+hi)/2, fm=f(m); if(fm>0) lo=m; else hi=m; }
+  return {x:(lo+hi)/2, ok:true};
+}
+
+function simulate(pump, inp){
+  const notes=[], verdicts=[];
+  const A=makePumpCurve(pump, inp.cA), B=makePumpCurve(pump, inp.cB);
+  const ft2psi = h => h*pump.SG*PSI_PER_FT_WATER;
+  // Bypass: restriction orifice from each pump's discharge (upstream of its check valve) to the
+  // suction vessel; flow ~ sqrt(head across it), referenced to the design flow at rated head.
+  const Qb = Hh => inp.bypassOn ? inp.Qbd*Math.sqrt(Math.max(Hh,0)/pump.H_bep) : 0;
+  // What a running pump puts into the header at header head Hh: its stable-branch flow less its bypass.
+  const deliv = (P,Hh) => { const q=P.Qr(Hh); return q==null ? 0 : Math.max(0, q - Qb(Hh)); };
+
+  // ---- before: A alone delivering the header flow ----
+  const Qop=inp.Qop;
+  // A alone sits on its own curve at its total flow (header flow + its bypass): read the curve directly.
+  let H1=A.H(Qop); for(let i=0;i<60;i++) H1=A.H(Qop+Qb(H1));
+  const qA0 = Qop+Qb(H1);
+  if(qA0>A.Qend || !(H1>0)){
+    return {error:`Pump A can't deliver ${fmt(Qop,0)} gpm${inp.bypassOn?' plus its bypass':''} at this wear; reduce the header flow.`};
+  }
+
+  // ---- system curve through (Qop, H1) ----
+  let Hs, sysSource;
+  if(inp.useDefined){
+    Hs = (inp.Pd-inp.Ps)/(pump.SG*PSI_PER_FT_WATER) + (inp.Zd-inp.Zs);
+    sysSource='defined vessels';
+  } else {
+    const frac = inp.preset==='static92' ? STATIC92 : inp.preset==='closed' ? 0 : inp.staticFrac/100;
+    Hs = frac*H1; sysSource = inp.preset==='static92' ? 'Karassik Example 1 ratio' : inp.preset==='closed' ? 'closed loop' : 'custom fraction';
+  }
+  if(Hs>=H1) return {error:`Static head (${fmt(Hs,0)} ft) is at or above pump A's head at ${fmt(Qop,0)} gpm (${fmt(H1,0)} ft): pump A couldn't deliver this flow into that system. Check the system values.`};
+  const kSys=(H1-Hs)/(Qop*Qop);
+  const Qsys = Hh => Hh<=Hs ? 0 : Math.sqrt((Hh-Hs)/kSys);
+
+  // ---- lift check: B must beat H1 before its check valve opens ----
+  // Behind a shut check valve B passes no header flow, so the head it brings to the valve is its
+  // ZERO-FLOW head (or, with a bypass, its head at its own bypass flow) -- not the curve's peak. On a
+  // curve that rises toward a peak, a pump can have a peak above the header and still never lift.
+  let qB0=0;
+  if(inp.bypassOn){ for(let i=0;i<60;i++) qB0 = Qb(B.H(qB0)); }
+  const HsoB = B.H(qB0);
+  const liftMargin = (HsoB/H1-1)*100;
+  const Bshut = HsoB<=H1;
+  const liftSpeed = Bshut ? null : Math.sqrt(H1/HsoB);
+
+  // ---- overlap: both pumps feeding the header ----
+  const delivB = Hh => Bshut ? 0 : deliv(B,Hh);   // B never lifted: it stays off the header
+  const sumDeliv = Hh => deliv(A,Hh)+delivB(Hh);
+  const hiH = Math.max(A.Hpk,B.Hpk);
+  let Hstar, modeNote='', Qtarget=null;
+  if(inp.mode==='uncontrolled'){
+    Hstar = bisect(Hh=>sumDeliv(Hh)-Qsys(Hh), Hs, hiH).x;
+  } else {
+    Qtarget = inp.mode==='hold' ? Qop : inp.Qset;
+    // A flow controller can only ADD resistance: the header head can't fall below the system curve.
+    const Hmin = Hs + kSys*Qtarget*Qtarget;
+    const s = bisect(Hh=>sumDeliv(Hh)-Qtarget, 0, hiH);
+    if(s.x < Hmin){
+      Hstar = bisect(Hh=>sumDeliv(Hh)-Qsys(Hh), Hs, hiH).x;
+      modeNote = `${fmt(Qtarget,0)} gpm is beyond what both pumps can push through this system; the control valve is wide open and flow settles at the uncontrolled point.`;
+      verdicts.push(['warn', modeNote]);
+    } else Hstar = s.x;
+  }
+  // Header flow each pump puts in at H*. A drooping pump's stable branch starts at its peak with a
+  // finite flow (Q_pk), so its contribution jumps from 0 to Q_pk at its peak head. If the target falls
+  // inside that jump, the pump would have to run on its drooping branch, where it can't hold a stable
+  // flow: it takes the remainder and the split is flagged indeterminate (Karassik pp.2.128, 2.212).
+  const dH = 1e-6*Math.max(hiH,1);
+  const fns = [d=>deliv(A,d), d=>delivB(d)];
+  const dHi = fns.map(f=>f(Hstar+dH)), dLo = fns.map(f=>f(Hstar-dH));
+  const target = inp.mode==='uncontrolled' ? Qsys(Hstar) : Math.min(Qtarget, Qsys(Hstar) || Qtarget);
+  let dShare = dHi.slice(), splitIndet=false;
+  const jump = dLo.map((v,i)=>Math.max(v-dHi[i],0)), jumpTot = jump[0]+jump[1];
+  const resid = target - (dHi[0]+dHi[1]);
+  if(jumpTot > 1e-6*target && resid > 1e-3*target){
+    dShare = dHi.map((v,i)=> v + Math.min(resid,jumpTot)*jump[i]/jumpTot);
+    splitIndet = true;
+  } else if(jumpTot <= 1e-6*target){ dShare = fns.map(f=>f(Hstar)); }
+  const pumps = [['A (outgoing)',A],['B (incoming)',B]].map(([name,P],i)=>{
+    const d = dShare[i];
+    let q, Hp=Hstar, onBypass=false;
+    if(d>0){ q = d + Qb(Hstar); }
+    else if(inp.bypassOn){   // check shut: pump runs on its own bypass, where its curve meets the orifice curve
+      q=0; for(let k=0;k<60;k++) q = Qb(P.H(q)); Hp=P.H(q); onBypass=true;
+    } else { q=0; Hp=P.H(0); }
+    return {name, P, d, byp: d>0?Qb(Hstar):(onBypass?q:0), q, Hp,
+      indet: d>0 && splitIndet && jump[i]>1e-3*target, runout: d>0 && q>P.Qlast, deadhead: d<=0};
+  });
+  const Qtot = pumps[0].d+pumps[1].d;
+
+  // ---- thermal ----
+  const fp = fluidProps(pump, pump.T_F);
+  const Pabs_suc = P_ATM + inp.Ps + inp.Zs*pump.SG*PSI_PER_FT_WATER;
+  const Tflash = fp.Ts ? flashTemp(fp, Pabs_suc) : null;
+  const flashMargin = Tflash!=null ? Tflash-pump.T_F : null;
+  const limit = flashMargin!=null ? Math.min(inp.allowRise, flashMargin) : inp.allowRise;
+  const limitBy = (flashMargin!=null && flashMargin<inp.allowRise) ? 'flash at suction pressure' : 'allowable rise';
+  const rate = fp.cp ? pump.Pso_hp*HP_TO_BTU_MIN/(pump.holdup_lb*fp.cp) : null;   // F/min, no flow
+  const tLimit = rate ? limit/rate : null;                                         // min
+  // Steady rise through a pump passing q gpm at head Hp (Karassik Eq. 33 form, compression term
+  // neglected): losses = shaft power - water power, carried off by the through-flow.
+  const steadyRise = (q,Hp) => {
+    if(!fp.cp || q<=0) return null;
+    const P=interp(pump.Q,pump.P,q), whp=q*Hp*pump.SG/3960;
+    return Math.max(P-whp,0)*HP_TO_BTU_MIN/(q*GPM_TO_LB_MIN_WATER*pump.SG*fp.cp);
+  };
+  pumps.forEach(p=>{ p.dT = p.q>0 ? steadyRise(p.q,p.Hp) : null; });
+
+  // Protection response for a pump with no flow at all
+  let tResp=null, respBy=null, peak=null;
+  const layers=[];
+  if(inp.sis==='detect') layers.push({t:inp.sisT/60, by:'SIS deadhead trip'});
+  if(inp.sis==='temp' && rate) layers.push({t:inp.sisDT/rate + inp.sisT/60, by:'SIS high-temperature trip'});
+  if(inp.opOn) layers.push({t:inp.opT, by:'operator'});
+  if(layers.length){ const L=layers.reduce((a,b)=>a.t<=b.t?a:b); tResp=L.t; respBy=L.by; }
+  if(rate && tResp!=null) peak = rate*tResp;
+
+  // ---- per-pump status ----
+  pumps.forEach(p=>{
+    if(p.q<=0){ p.status=['bad','DEADHEAD: check valve not lifting, no flow']; return; }
+    if(p.q>=pump.Qmin_cont) p.status=['ok','above continuous minimum'];
+    else if(p.q>=pump.Qmin_int) p.status=['warn','intermittent only (below continuous minimum)'];
+    else p.status=['bad','below intermittent minimum'];
+    if(p.deadhead) p.status=[p.status[0], 'check valve shut, running on its bypass; '+p.status[1]];
+  });
+
+  // ---- verdicts ----
+  if(HsoB<=H1) verdicts.push(['bad', `Pump B will not lift its check valve: its worn ${inp.bypassOn?'head at bypass flow':'shutoff head'} (${fmt(HsoB,0)} ft) is not above the header head (${fmt(H1,0)} ft). B stays off the header${inp.bypassOn?', running on its bypass':', deadheaded'}.`]);
+  else verdicts.push(['ok', `Pump B lifts its check valve at about ${fmt(liftSpeed*100,0)}% speed (margin ${fmt(liftMargin,1)}% over the header head).`]);
+  pumps.forEach(p=>{ if(p.status[0]!=='ok') verdicts.push([p.status[0], `Pump ${p.name}: ${fmt(p.q,0)} gpm total — ${p.status[1]}.`]); });
+  const anyDead = pumps.some(p=>p.q<=0);
+  if(anyDead){
+    if(!rate) verdicts.push(['warn', 'Deadhead heating not evaluated: no liquid heat capacity for this fluid at this temperature.']);
+    else if(tResp==null) verdicts.push(['bad', `No protection layer stops a deadheaded pump: it reaches the ${fmt(limit,0)} °F limit in about ${fmt(tLimit,1)} min.`]);
+    else if(peak<=limit) verdicts.push(['ok', `Deadhead: the ${respBy} acts at ${fmt(tResp,2)} min, peak rise ${fmt(peak,1)} °F, within the ${fmt(limit,0)} °F limit.`]);
+    else verdicts.push(['bad', `Deadhead: the fastest layer (${respBy}, ${fmt(tResp,2)} min) is too slow — the pump reaches the ${fmt(limit,0)} °F limit at ${fmt(tLimit,2)} min.`]);
+  }
+  pumps.forEach(p=>{ if(p.dT!=null && p.dT>limit) verdicts.push(['bad', `Pump ${p.name}: steady temperature rise at ${fmt(p.q,0)} gpm is ${fmt(p.dT,1)} °F, above the ${fmt(limit,0)} °F limit.`]); });
+  [['A',A],['B',B]].forEach(([n,P])=>{ if(!P.continuous) notes.push(`Pump ${n}'s curve${P.c>1?' (worn, c/c₀ '+fmt(P.c,2)+')':' (new)'} droops near shutoff: head rises ${fmt(P.droop,1)}% from its shutoff (${fmt(P.Hso,0)} ft) to a peak of ${fmt(P.Hpk,0)} ft at ${fmt(P.Qpk,0)} gpm. Below that flow it has no stable operating point in parallel. At this specific speed the model can't reliably separate a slight droop from a flat curve (two estimates, each ~±8%); Karassik p.2.56: low-specific-speed pumps "can have drooping curves".`); });
+
+  notes.push(inp.vendorHso>0 ? `Shutoff head: the vendor's tested value (${fmt(inp.vendorHso,0)} ft, new pump), used in place of the sizing estimate.` : `Shutoff head: Stepanoff's ψ_s/o = 0.585 (test-data constant across specific speeds, adopted by Karassik p.2.50); Karassik Eq. 65 agrees within ~1%. Individual pumps scatter around it (Stepanoff reports ~10% from casing details), so the lift and droop results near the margin are sensitive to it — enter the vendor's shutoff head where one exists.`);
+  if(pumps.some(p=>p.indet)) notes.push(`Split indeterminate: ${pumps.filter(p=>p.indet).map(p=>'pump '+p.name).join(' and ')} would have to run on the drooping part of its curve (between its shutoff and its peak) to make up the flow, where it can't hold a stable flow. The split shown is one possible answer; in practice the flow wanders or the weaker pump is pushed back to shutoff (Karassik pp.2.128, 2.212). Treat its flow as uncertain.`);
+  if(qA0>A.Qlast) notes.push('Pump A alone runs past the end of the computed curve (135% of BEP) before the changeover; its operating point is a linear extrapolation.');
+  if(pumps.some(p=>p.runout)) notes.push('One pump runs past the end of the computed curve (135% of BEP); its flow is a linear extrapolation.');
+
+  return {A,B,H1,Hs,kSys,Qsys,sysSource,HsoB,liftMargin,liftSpeed,Hstar,Qtot,Qtarget,pumps,
+    rise_ft:Hstar-H1, rise_psi:ft2psi(Hstar-H1), H1_psi:ft2psi(H1), Hstar_psi:ft2psi(Hstar),
+    cp:fp.cp, Pabs_suc, Tflash, flashMargin, limit, limitBy, rate, tLimit, tResp, respBy, peak, verdicts, notes, modeNote};
+}
+
+// =====================================================================================
+// UI
+// =====================================================================================
+function fmt(x,d=2){ return (x==null||!isFinite(x)) ? '—' : Number(x).toLocaleString(undefined,{maximumFractionDigits:d,minimumFractionDigits:0}); }
+const $ = id => document.getElementById(id);
+
+function loadPump(){
+  const m = location.hash.match(/[#&]p=([^&]+)/);
+  if(m){
+    try{
+      const p = JSON.parse(decodeURIComponent(m[1]));
+      const need=['fluid','T_F','SG','Q_bep','H_bep','Q','H','P','Hso','Pso_hp','Qmin_cont','Qmin_int','holdup_lb'];
+      if(need.every(k=>p[k]!=null) && p.Q.length===p.H.length && p.H.length===p.P.length){
+        return {pump:p, source:'handed over from the sizing tool'};
+      }
+      throw new Error('missing fields');
+    }catch(e){
+      $('handoffBanner').innerHTML = `<div class="banner warn">The pump in the link couldn't be read (${e.message}); showing the sizing tool's default pump instead.</div>`;
+    }
+  }
+  return {pump:DEFAULT_PUMP, source:"the sizing tool's default pump"};
+}
+let PUMP = DEFAULT_PUMP, PUMP_SOURCE = "the sizing tool's default pump", PUMP_SCOPE_ERR = [];
+
+function linkSlider(sid, nid){
+  const s=$(sid), n=$(nid);
+  s.addEventListener('input', ()=>{ n.value=s.value; run(); });
+  n.addEventListener('input', ()=>{ const v=parseFloat(n.value); if(!isNaN(v)){ if(v>parseFloat(s.max)) s.max=v; s.value=v; } run(); });
+}
+function init(){
+  ({pump:PUMP, source:PUMP_SOURCE} = loadPump());
+  const p=PUMP;
+  PUMP_SCOPE_ERR = pumpScopeErrors(p);
+  if(PUMP_SCOPE_ERR.length) $('handoffBanner').innerHTML = scopeRefusal();
+  $('pumpSummary').innerHTML = `<b>${p.fluid}</b> at ${fmt(p.T_F,0)} °F (SG ${fmt(p.SG,3)}) — ${PUMP_SOURCE}.<br>
+    Rated ${fmt(p.Q_bep,0)} gpm @ ${fmt(p.H_bep,0)} ft, ${fmt(p.N_rpm,0)} rpm, n<sub>s</sub> ${fmt(p.Ns,0)}, D₂ ${fmt(p.D2_in,2)} in.<br>
+    Shutoff ${fmt(p.Hso,0)} ft (Stepanoff ψ 0.585), ${fmt(p.Pso_hp,1)} hp. Min. flow ${fmt(p.Qmin_cont,0)} gpm continuous, ${fmt(p.Qmin_int,0)} intermittent. Hold-up ${fmt(p.holdup_lb,1)} lb.`;
+  const qs=$('Qop_slider'); qs.min=Math.round(p.Q_bep*0.3); qs.max=Math.round(p.Q_bep*1.3); qs.step=1; qs.value=p.Q_bep; $('Qop').value=p.Q_bep;
+  $('Qset').value=Math.round(p.Q_bep*1.2);
+  ['Qop','Qset','cA','cB'].forEach(id=>{ const [lo,hi]=BOUNDS[id](); $(id).min=lo; $(id).max=hi;
+    $(id).addEventListener('change',()=>{ writeBackClamp(id); run(); }); });
+  $('Qbd').value=Math.round(p.Qmin_cont);
+  document.querySelectorAll('.viewBtn').forEach(b=>b.addEventListener('click',()=>{
+    CHART_VIEW=b.dataset.view; document.querySelectorAll('.viewBtn').forEach(x=>x.classList.toggle('active',x===b)); run(); }));
+  linkSlider('Qop_slider','Qop'); linkSlider('cA_slider','cA'); linkSlider('cB_slider','cB'); linkSlider('sf_slider','sf');
+  ['vendorHso','mode','Qset','sysPreset','useDefined','Ps','Zs','Pd','Zd','bypass','Qbd','sis','sisT','sisDT','opOn','opT','allowRise']
+    .forEach(id=>{ $(id).addEventListener('input',run); $(id).addEventListener('change',run); });
+  run();
+}
+function scopeRefusal(){
+  return `<div class="banner bad"><b>Out of scope — not simulated.</b> This tool covers single-stage, radial/mixed-flow centrifugal pumps, the same range the sizing tool screens for. This pump fails that screen:<ul style="margin:4px 0 0 18px; padding:0;">${PUMP_SCOPE_ERR.map(x=>`<li>${x}</li>`).join('')}</ul></div>`;
+}
+// Bounded inputs: the calc always uses the value clamped into [lo, hi]; the box itself is rewritten to
+// the clamped value on 'change' (blur/enter), not while the user is still typing.
+const BOUNDS = {
+  Qop: () => [Math.round(PUMP.Q_bep*0.3), Math.round(PUMP.Q_bep*1.3)],  // A alone, on its computed curve
+  Qset:() => [Math.round(PUMP.Q_bep*0.3), Math.round(PUMP.Q_bep*2.6)],  // both pumps together
+  cA:  () => [1, C_MAX], cB: () => [1, C_MAX]};
+function clampField(id){
+  const v=parseFloat($(id).value), [lo,hi]=BOUNDS[id]();
+  return isNaN(v) ? v : Math.min(Math.max(v,lo),hi);
+}
+function writeBackClamp(id){
+  const el=$(id), v=parseFloat(el.value), c=clampField(id);
+  if(!isNaN(v) && c!==v){ el.value=+c.toFixed(2); const s=$(id+'_slider'); if(s) s.value=c; }
+}
+function readInputs(){
+  return {vendorHso:parseFloat($('vendorHso').value)||0,
+    Qop:clampField('Qop'), mode:$('mode').value, Qset:clampField('Qset'),
+    cA:clampField('cA'), cB:clampField('cB'),
+    preset:$('sysPreset').value, staticFrac:parseFloat($('sf').value), useDefined:$('useDefined').checked,
+    Ps:parseFloat($('Ps').value)||0, Zs:parseFloat($('Zs').value)||0, Pd:parseFloat($('Pd').value)||0, Zd:parseFloat($('Zd').value)||0,
+    bypassOn:$('bypass').value==='orifice', Qbd:parseFloat($('Qbd').value)||0,
+    sis:$('sis').value, sisT:parseFloat($('sisT').value)||0, sisDT:parseFloat($('sisDT').value)||0,
+    opOn:$('opOn').checked, opT:parseFloat($('opT').value)||0, allowRise:parseFloat($('allowRise').value)};
+}
+function run(){
+  const inp=readInputs();
+  $('setpointField').style.display = inp.mode==='setpoint'?'':'none';
+  $('customStaticField').style.display = (inp.preset==='custom' && !inp.useDefined)?'':'none';
+  $('sysPreset').disabled = inp.useDefined;
+  $('bypassField').style.display = inp.bypassOn?'':'none';
+  $('sisFields').style.display = inp.sis!=='none'?'':'none';
+  $('sisTempField').style.display = inp.sis==='temp'?'':'none';
+  $('opField').style.display = inp.opOn?'':'none';
+  if(PUMP_SCOPE_ERR.length){ $('verdicts').innerHTML=scopeRefusal(); return; }
+  if(!(inp.Qop>0) || !(inp.cA>=1) || !(inp.cB>=1)) return;
+
+  const band = simulateBand(PUMP, inp), r = band.primary;
+  if(r.error){ $('verdicts').innerHTML=`<div class="banner bad">${r.error}</div>`; return; }
+
+  // ---- one result, one verdict line for pump B ----
+  const bB = r.pumps[1];
+  const st = bB.q<=0 ? ['bad','deadheads: its check valve does not lift'] : bB.q<PUMP.Qmin_int ? ['bad','runs below intermittent minimum flow']
+           : bB.q<PUMP.Qmin_cont ? ['warn','runs below continuous minimum flow (intermittent only)'] : bB.indet ? ['warn','split with A is indeterminate (drooping curve)'] : ['ok','takes over cleanly'];
+  const summary = `<b>Pump B ${st[1]}.</b> Lift margin ${r.liftMargin>=0?'+':''}${fmt(r.liftMargin,1)}%, B at ${fmt(bB.q,0)} gpm vs. ${fmt(PUMP.Qmin_cont,0)} gpm continuous minimum.`;
+  // One-line summary stays visible; every other finding goes into one collapsible list whose header
+  // carries the severity counts, so the results panels aren't pushed out of view.
+  const items = [...r.verdicts.map(([c,t])=>[c,t]), ...r.notes.map(t=>['note',t])];
+  const cnt = k => items.filter(x=>x[0]===k).length;
+  const counts = [[cnt('bad'),'problem','bad'],[cnt('warn'),'warning','warn'],[cnt('note'),'note',''],[cnt('ok'),'ok','ok']]
+    .filter(x=>x[0]>0).map(([n,l,c])=>`<span class="pill ${c}" style="margin-left:8px;">${n} ${l}${n>1?'s':''}</span>`).join('');
+  const prevOpen = $('findings') ? $('findings').open : false;
+  $('verdicts').innerHTML = `<div class="banner ${st[0]}" style="margin-bottom:8px;">${summary}</div>`
+    + `<details id="findings" class="sub" style="margin:0 0 14px; border-top:none; padding-top:0;"${prevOpen?' open':''}><summary>Findings &amp; notes${counts}</summary><div style="margin-top:8px;">`
+    + items.map(([c,t])=>`<div class="banner ${c==='note'?'':c}" style="font-size:0.8rem; padding:6px 10px; margin-bottom:6px;">${t}</div>`).join('')
+    + `</div></details>`;
+
+  // lift
+  $('o_H1').textContent=`${fmt(r.H1,0)} ft`; $('o_H1s').textContent=`${fmt(r.H1_psi,1)} psi differential; pump A worn c/c₀ ${fmt(inp.cA,2)}`;
+  $('o_HsoB').textContent=`${fmt(r.HsoB,0)} ft`; $('o_HsoBs').textContent=`shutoff factor ${fmt(r.B.f0,3)} at c/c₀ ${fmt(inp.cB,2)}; ${band.vendor?'from the vendor shutoff head':'Stepanoff ψ 0.585 basis'}`;
+  const lc = r.HsoB<=r.H1?'bad':'ok';
+  $('o_lift').innerHTML=`<span class="pill ${lc}">${r.liftMargin>=0?'+':''}${fmt(r.liftMargin,1)}%</span>`;
+  $('o_rtso').innerHTML = [['A (outgoing)',r.A],['B (incoming)',r.B]].map(([n,P])=>{
+    const ok = P.continuous && P.rtso>=10, c = P.continuous ? (P.rtso>=10?'ok':'warn') : 'bad';
+    return `<tr><td>${n}, c/c₀ ${fmt(P.c,2)}</td><td class="num">${fmt(P.Hso,0)} ft</td><td class="num">${fmt(P.rtso,1)}%</td><td><span class="pill ${c}">${P.continuous?'continuous rise':'droops '+fmt(P.droop,1)+'% near shutoff'}${P.continuous && P.rtso<10?' (below 10%)':''}</span></td></tr>`;
+  }).join('');
+  $('o_lifts').textContent = r.liftSpeed ? `lifts at ~${fmt(r.liftSpeed*100,0)}% speed (head ∝ speed²)` : 'does not lift at full speed';
+
+  // overlap
+  $('o_table').innerHTML = r.pumps.map(p=>`<tr><td>${p.name}</td><td class="num">${fmt(p.d,0)}</td><td class="num">${fmt(p.byp,0)}</td><td class="num">${fmt(p.q,0)}</td><td class="num">${fmt(p.q/PUMP.Q_bep*100,0)}%</td><td><span class="pill ${p.status[0]}">${p.status[1]}</span></td><td class="num">${p.dT!=null?fmt(p.dT,1)+' °F':(p.q<=0?'see below':'—')}</td></tr>`).join('');
+  $('o_Hstar').textContent=`${fmt(r.Hstar,0)} ft`;
+  const dPcv=(r.Hstar-(r.Hs+r.kSys*r.Qtot*r.Qtot))*PUMP.SG/2.31;
+  $('o_Hstars').textContent=`${fmt(r.Hstar_psi,1)} psi; static head ${fmt(r.Hs,0)} ft (${r.sysSource})`+(inp.mode!=='uncontrolled' && dPcv>0.05 ? `; control valve takes ${fmt(dPcv,1)} psi more than before` : '');
+  $('o_rise').textContent=`${r.rise_psi>=0?'+':''}${fmt(r.rise_psi,1)} psi`;
+  $('o_Qtot').textContent=`${fmt(r.Qtot,0)} gpm`;
+  $('o_Qtots').textContent = inp.mode==='uncontrolled' ? 'set by the system curve' : (r.modeNote ? 'setpoint not reachable' : `held at ${fmt(r.Qtarget,0)} gpm by the control valve`);
+  drawChart(r, inp);
+
+  // thermal
+  const dead = r.pumps.filter(p=>p.q<=0);
+  $('o_thermalNote').innerHTML = dead.length
+    ? `<div class="banner bad">Pump ${dead.map(p=>p.name).join(' and ')} is deadheaded with no flow. Peak rise depends on the fastest protection layer${r.tResp!=null?` (${r.respBy}, ${fmt(r.tResp,2)} min → ${fmt(r.peak,1)} °F)`:' (none selected)'}.</div>`
+    : `<div class="note">No pump is deadheaded in this case. These values show how fast a pump would heat if its check valve failed to lift with no bypass.</div>`;
+  $('o_rate').textContent = r.rate ? `${fmt(r.rate,0)} °F/min` : '—';
+  $('o_rates').textContent = r.cp ? `${fmt(PUMP.Pso_hp,1)} hp into ${fmt(PUMP.holdup_lb,1)} lb, c_p ${fmt(r.cp,3)} Btu/lb·°F` : 'no liquid c_p at this temperature';
+  $('o_limit').textContent = `${fmt(r.limit,0)} °F`;
+  $('o_limits').textContent = `set by ${r.limitBy}; flash at ${r.Tflash!=null?fmt(r.Tflash,0)+' °F':'>400 °F'} (${fmt(r.Pabs_suc,1)} psia suction)`;
+  $('o_tlim').textContent = r.tLimit!=null ? `${fmt(r.tLimit*60,0)} s` : '—';
+  $('o_tlims').textContent = r.tLimit!=null ? `${fmt(r.tLimit,2)} min; hold-up is a lower bound, so this errs short` : '';
+
+  $('basisList').innerHTML = BASIS.map(t=>`<div class="gap">${t}</div>`).join('');
+}
+
+const BASIS = [
+  'Pump curve: from the sizing tool. The 1-D velocity-triangle curve above half the BEP flow, blended below that into the shutoff head of Karassik Eq. 65/66 (k_ex = 0.2 ± 0.1), per Karassik p.2.68.',
+  "Wear: Karassik §2.1.3 Table 3 (p.2.131), one Flowserve pump at n_s 2100; applying it at other specific speeds is an extrapolation. Head factor tapers linearly from the shutoff factor at zero flow to the BEP factor at rated flow (this tool's construction). Wear's small effect on power is ignored.",
+  'Parallel split: Karassik Fig. 40. Both pumps see the header head; each pump\'s flow is read off its own worn curve. Where a curve rises toward shutoff, a non-increasing envelope is used so every head maps to one flow, and the case is flagged.',
+  'Lift check: a starting pump runs at shutoff behind its check valve until its head exceeds the header head (Karassik Ch. 15 p.15.14); head scales with speed² during run-up (§11.1 p.11.17).',
+  'System curve: H = H_static + kQ², through pump A\'s operating point. Default static fraction from Karassik §11.1 Example 1 (≈344 of 372 ft). With a flow controller, the control valve can only add resistance, so a setpoint beyond the uncontrolled point falls back to it.',
+  'Minimum flow: Karassik §2.1.1 Table 16 from the sizing tool; intermittent = K₄ 0.7 ("less than 25% of total operating time").',
+  'Bypass: per-pump continuous orifice, teed between the pump and its check valve and returned to the suction vessel (Karassik §11.4 p.11.127). Flow scales with √head.',
+  'Deadhead heating: shutoff power (Mockridge, Karassik Eq. 67 / Fig. 23) heats the casing hold-up with no heat loss to the casing (Karassik Ch. 15 p.15.13). Hold-up is a geometric lower bound (impeller + volute only), so heating errs fast. Generic Fig. 16B curves suggest shutoff power could be ~1.3–1.5× Mockridge\'s.',
+  'Through-flow temperature rise: (shaft power − water power) carried off by the pump\'s own flow (Karassik Eq. 33 form, compression term neglected).',
+  'Limits: allowable rise from Karassik Ch. 15 (15 °F hot water / boiler feed; 50–100 °F cold water) or the flash point at suction pressure, whichever is lower. Flash uses suction pressure, which is conservative for the casing.',
+  'Heat capacity: thermo liquid c_p; sulfuric acid from Perry\'s 9th ed. Table 2-91 (93 wt%, 20 °C value held flat). Not available below the melting point or above the critical temperature.',
+  'Not modeled: the run-up transient itself, check-valve slam when pump A stops (Karassik §11.3), unequal branch piping, speed differences, and the vendor\'s own minimum-flow and curve data, which override everything here.',
+];
+
+// Chart: worn A and B, combined deliverable curve, system curve, operating points, min-flow lines.
+// Three views: 'operating' (fits the operating points, crops the empty low-head band), 'lowflow'
+// (shutoff to BEP per pump, where the curves' shape matters), 'full' (whole curve from zero head).
+let CHART_VIEW = 'operating';
+function niceStep(range, n){
+  const raw=range/n, mag=Math.pow(10,Math.floor(Math.log10(raw))), f=raw/mag;
+  return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*mag;
+}
+function drawChart(r, inp){
+  const svgEl=$('chartHQ'), H=340, W=640, padL=56,padR=150,padT=16,padB=34;
+  const Qmax = PUMP.Q[PUMP.Q.length-1];
+  const N=240, xs=[]; for(let i=0;i<=N;i++) xs.push(Qmax*1.15*i/N);
+  const curveA=xs.map(q=>({x:q,y:r.A.H(q)})), curveB=xs.map(q=>({x:q,y:r.B.H(q)}));
+  // Combined curve (Karassik Fig. 40): at each head, add the two pumps' flows from their own curves.
+  // Above the weaker pump's peak only the stronger pump delivers, so the combined curve IS the
+  // stronger pump's curve, starting at its shutoff. Below the weaker pump's peak both stable branches
+  // add. If the weaker pump droops, its stable branch starts at a finite flow (Q_pk), leaving a gap at
+  // that head that no stable split fills -- drawn as a dashed indeterminate connector.
+  const Sp = r.A.Hpk>=r.B.Hpk ? r.A : r.B, Wp = Sp===r.A ? r.B : r.A;
+  const hTop=Sp.Hpk, hBot=Math.min(r.A.H(Qmax),r.B.H(Qmax)), Hj=Wp.Hpk;
+  const comb=[];
+  for(let i=0;i<=60;i++){ const q=Sp.Qpk*i/60; comb.push({x:q,y:Sp.H(q)}); }
+  for(let i=1;i<=80;i++){ const hh=Sp.Hpk-(Sp.Hpk-Hj)*i/80; const q=Sp.Qr(hh); if(q!=null) comb.push({x:q,y:hh}); }
+  const comb2=[]; for(let i=0;i<=N;i++){ const hh=Hj-(Hj-hBot)*i/N; const qa=r.A.Qr(hh), qb=r.B.Qr(hh); if(qa!=null&&qb!=null) comb2.push({x:qa+qb,y:hh}); }
+  const combGap = (comb.length && comb2.length && comb2[0].x-comb[comb.length-1].x > 1e-6*Qmax) ? [comb[comb.length-1], comb2[0]] : [];
+  const sys=[]; for(let i=0;i<=N;i++){ const q=2.3*Qmax*i/N; sys.push({x:q,y:r.Hs+r.kSys*q*q}); }
+  const ops=[{x:inp.Qop,y:r.H1},{x:r.Qtot,y:r.Hstar},{x:r.pumps[0].q,y:r.pumps[0].Hp},{x:r.pumps[1].q,y:r.pumps[1].Hp}];
+
+  // ---- window ----
+  let x0=0, x1, y0, y1;
+  const inX=(pts,a,b)=>pts.filter(p=>p.x>=a&&p.x<=b).map(p=>p.y);
+  if(CHART_VIEW==='full'){
+    x1=Math.max(2*Qmax*0.9, r.Qtot*1.1); y0=0; y1=hTop*1.08;
+  } else {
+    // low-flow: each pump from shutoff to 0.8*Q_BEP, head axis fitted to the pump curves only, so the
+    // shape near shutoff (flat top / droop) is readable. operating: everything that's in play.
+    x1 = CHART_VIEW==='lowflow' ? PUMP.Q_bep*0.8 : Math.max(...ops.map(p=>p.x), PUMP.Qmin_cont)*1.3;
+    // operating: fit the operating points, H1 and the curve peaks only; the lower parts of the
+    // curves and the system curve are clipped (the "crop" -- little value in the low-head band).
+    const ys = CHART_VIEW==='lowflow' ? [...inX(curveA,x0,x1),...inX(curveB,x0,x1)]
+             : [...ops.filter(p=>p.x<=x1).map(p=>p.y), r.H1, hTop, r.A.H(0), r.B.H(0)];
+    let lo=Math.min(...ys), hi=Math.max(...ys);
+    const span=Math.max(hi-lo, 0.08*PUMP.H_bep);
+    y0=Math.max(0, lo-0.12*span); y1=hi+0.12*span;
+  }
+  const xs_=niceStep(x1-x0,5), ys_=niceStep(y1-y0,5);
+  x1=Math.ceil(x1/xs_)*xs_; y0=Math.floor(y0/ys_)*ys_; y1=Math.ceil(y1/ys_)*ys_;
+  const sx=x=>padL+(x-x0)/(x1-x0)*(W-padL-padR), sy=y=>H-padB-(y-y0)/(y1-y0)*(H-padT-padB);
+
+  let s=`<defs><clipPath id="plotClip"><rect x="${padL}" y="${padT}" width="${W-padL-padR}" height="${H-padT-padB}"/></clipPath></defs>`;
+  for(let t=x0;t<=x1+1e-9;t+=xs_) s+=`<line class="grid" x1="${sx(t)}" y1="${padT}" x2="${sx(t)}" y2="${H-padB}"/><text x="${sx(t)}" y="${H-padB+16}" text-anchor="middle">${fmt(t,0)}</text>`;
+  for(let t=y0;t<=y1+1e-9;t+=ys_) s+=`<line class="grid" x1="${padL}" y1="${sy(t)}" x2="${W-padR}" y2="${sy(t)}"/><text x="${padL-6}" y="${sy(t)+3}" text-anchor="end">${fmt(t,ys_<1?1:0)}</text>`;
+  s+=`<line class="axis" x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-padB}"/><line class="axis" x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}"/>`;
+  s+=`<text x="${(padL+W-padR)/2}" y="${H-4}" text-anchor="middle" font-size="10.5">Q (gpm)</text><text x="14" y="${(padT+H-padB)/2}" text-anchor="middle" font-size="10.5" transform="rotate(-90,14,${(padT+H-padB)/2})">H (ft)${y0>0?' — axis cropped':''}</text>`;
+  const path=(pts,c,w,dash)=>`<path clip-path="url(#plotClip)" d="${pts.map((p,i)=>(i?'L':'M')+sx(p.x).toFixed(1)+','+sy(p.y).toFixed(1)).join(' ')}" fill="none" stroke="${c}" stroke-width="${w}" stroke-dasharray="${dash||'none'}"/>`;
+  const series=[
+    {pts:curveA, c:'#0f7a8c', w:2, label:`Pump A (c/c₀ ${fmt(inp.cA,2)})`},
+    {pts:curveB, c:'#a8791f', w:2, dash:'6,3', label:`Pump B (c/c₀ ${fmt(inp.cB,2)})`},
+    {pts:comb, c:'#5a5a5a', w:2.2, label:'A + B combined'},
+    {pts:comb2, c:'#5a5a5a', w:2.2},
+    {pts:combGap, c:'#5a5a5a', w:1.4, dash:'2,3', label: combGap.length ? 'no stable split' : undefined},
+    {pts:sys, c:'#a83d3d', w:1.6, label:'System (as built)'},
+  ];
+  series.forEach(o=>{ if(o.pts.length) s+=path(o.pts,o.c,o.w,o.dash); });
+  [[PUMP.Qmin_cont,'#8f3232'],[PUMP.Qmin_int,'#c47a7a']].forEach(([q,c])=>{
+    if(q<=x1) s+=`<line x1="${sx(q)}" y1="${padT}" x2="${sx(q)}" y2="${H-padB}" stroke="${c}" stroke-width="1" stroke-dasharray="2,3"/>`; });
+  if(r.H1>=y0 && r.H1<=y1) s+=`<line x1="${padL}" y1="${sy(r.H1)}" x2="${W-padR}" y2="${sy(r.H1)}" stroke="#6b6b6b" stroke-width="1" stroke-dasharray="4,3"/>`;
+  // With a flow controller the valve closes during the overlap: the system curve steepens until it
+  // passes through the overlap point (Karassik §11.1 Fig. 15, system curves for valve openings).
+  // Same static head; the friction term grows by the valve's extra loss.
+  const Hsys_at = r.Hs + r.kSys*r.Qtot*r.Qtot;
+  if(inp.mode!=='uncontrolled' && r.Hstar-Hsys_at > 0.005*PUMP.H_bep){
+    const kT=(r.Hstar-r.Hs)/(r.Qtot*r.Qtot), thr=[]; for(let i=0;i<=N;i++){ const q=2.3*Qmax*i/N; thr.push({x:q,y:r.Hs+kT*q*q}); }
+    s+=path(thr,'#a83d3d',1.6,'6,4');
+    series.push({pts:[],c:'#a83d3d',w:1.6,dash:'6,4',label:'System (throttled)'});
+  }
+  const dots=[{p:ops[0],c:'#ffffff',st:'#2a2a2a',l:'A alone (before)'},{p:ops[1],c:'#2a2a2a',st:'#2a2a2a',l:'Overlap (header)'},
+    {p:ops[2],c:'#0f7a8c',st:'#fff',l:'A during overlap'},{p:ops[3],c:'#a8791f',st:'#fff',l:'B during overlap'}];
+  dots.forEach(d=>{ if(d.p.x>=x0&&d.p.x<=x1&&d.p.y>=y0&&d.p.y<=y1) s+=`<circle cx="${sx(d.p.x).toFixed(1)}" cy="${sy(d.p.y).toFixed(1)}" r="4.5" fill="${d.c}" stroke="${d.st}" stroke-width="1.5"/>`; });
+  let ly=padT+6; const lx=W-padR+12;
+  series.filter(o=>o.label).forEach(o=>{ s+=`<line x1="${lx}" y1="${ly}" x2="${lx+20}" y2="${ly}" stroke="${o.c}" stroke-width="${o.w}" stroke-dasharray="${o.dash||'none'}"/><text x="${lx+24}" y="${ly+3}" font-size="9.5">${o.label}</text>`; ly+=15; });
+  s+=`<line x1="${lx}" y1="${ly}" x2="${lx+20}" y2="${ly}" stroke="#8f3232" stroke-dasharray="2,3"/><text x="${lx+24}" y="${ly+3}" font-size="9.5">Q_min cont. / int.</text>`; ly+=15;
+  s+=`<line x1="${lx}" y1="${ly}" x2="${lx+20}" y2="${ly}" stroke="#6b6b6b" stroke-dasharray="4,3"/><text x="${lx+24}" y="${ly+3}" font-size="9.5">Header before B (H₁)</text>`; ly+=15;
+  dots.forEach(d=>{ s+=`<circle cx="${lx+10}" cy="${ly}" r="4" fill="${d.c}" stroke="${d.st}" stroke-width="1.5"/><text x="${lx+24}" y="${ly+3}" font-size="9.5">${d.l}</text>`; ly+=15; });
+  svgEl.innerHTML=s;
+}
+
+if(typeof document!=='undefined' && document.getElementById('chartHQ')) init();
+if(typeof module!=="undefined") module.exports={simulate, simulateBand, pumpWithShutoff, makePumpCurve, wearFactors, fluidProps, flashTemp, DEFAULT_PUMP, CP_TABLE};
+</script>
+<script src="/assets/track.js" defer></script>
+</body>
+</html>

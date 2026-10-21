@@ -123,6 +123,16 @@ for the check. Result: K_SHO clusters at 0.96–1.2 for 6 of 7 cases (used 1.0, 
 cluster); one high-suction-energy validation case (Cooper's own §2.1 example) needed K_SHO≈0.4
 instead.
 
+**Update 2026-10-12, calibration claim does not hold in the HTML tool:** evaluated directly in
+`Case Study Sizing Tool.html`'s engine at the defaults (500 gpm / 250 ft water), the shock-augmented
+1-D curve at Q=0 gives 343 ft vs the Stepanoff 297 ft (+16%). Across a 6-duty spread it lands 6–15%
+above Stepanoff, so `performance_curve_cases.py`'s check and the HTML don't agree. This no longer
+affects output: the 1-D curve now stops at 0.5·Q_BEP, and below that a cubic-Hermite blend joins it
+to the Stepanoff shutoff (Karassik §2.1.1 p.2.68 blends "at half of the BEP flow rate"), so K_SHO
+only shapes the 50–135% range. **Rise-to-shutoff check** (same date): a banner warns when
+H_shutoff/H_BEP − 1 < 15%, citing Karassik p.2.57 ("at least 15 to 20% more head H at shutoff than
+at BEP" for a stable curve; conflict "more likely to occur with low-specific-speed pumps").
+
 **Why the visible effect stays small (checked 2026-09-06, not just assumed):** the pre-existing
 velocity-triangle branch (BEP slip locked, no shock loss) is *already* close to linear in Q by
 construction — ψᵢ(Q) is an exact linear function of Q because Vu2,∞(Q) is linear and the locked
@@ -200,3 +210,18 @@ tool actually sizes to your input duty point). Generated via the standard affini
 speed (Q ∝ D, H ∝ D²) applied pointwise to the full-diameter curve — the same simplified method
 real vendor curve sheets use to interpolate a trim family from a single tested casing, not a
 re-derivation of the velocity triangle at each trim.
+
+## Low-flow limits & shutoff (added 2026-10-13) — "Low-flow limits & shutoff" panel
+
+All from Karassik 4th ed. §2.1.1. They feed the planned parallel-pump changeover simulator.
+
+| Quantity | Method | Source | Constants / notes |
+|---|---|---|---|
+| Shutoff head | H_s/o = [k_imp(U₂² − U_h1²) + k_ex·U₂²]/2g | Eq. 65/66, p.2.50 | k_imp = 1 ("kimp ≈ 1"); k_ex = 0.2, band ±0.1 ("usually in the range 0.2 ± 0.1"). r_h1 ≈ torque-sized shaft radius r_s, a stand-in because the hub isn't sized. Replaces Stepanoff's fixed ψ_s/o = 0.585, which sits inside the band. |
+| Low-flow head curve | 1-D curve computed for f ≥ 0.50; cubic-Hermite blend from the shutoff head (zero slope at Q=0) | p.2.68 ("blended … at half of the BEP flow rate") | Fritsch-Carlson slope limit; end slope set to 0 when shutoff ≤ the head at half flow (no overshoot). |
+| Rise-to-shutoff warning | banner if H_s/o/H_BEP − 1 < 15% | p.2.57 ("at least 15 to 20% more head") | — |
+| Shutoff power | K = hp_s/o ÷ [(N/1000)³(D₂[in]/10)⁵·SG] vs b₂/D₂; P̂_s/o = 0.01966K | Eq. 67 + Mockridge Fig. 23, p.2.51 | `MOCKRIDGE_K` table digitized by eye at 300 dpi (log-log, ±5–10% in K), log-log interpolation, clamped outside 0.01–0.36. Cross-check: generic §11.1 Fig. 16B gives ~40–50% of rated for n_s 600–1500; Mockridge gives ~30–35% across the tool's radial range. |
+| Low-flow power curve | straight-line blend from P_s/o at Q=0 to the 1-D BHP at 0.5·Q_BEP | this tool's construction | The 1-D BHP above 0.5·Q_BEP still uses a constant (BEP) efficiency, an existing simplification. |
+| Minimum flow | Q_min = Q_R·min(1, K₁K₂K₃K₄K₅); Q_R = Q_SR if Dₑ ≥ 0.5D₂, else Q_DR | Table 16, p.2.81 | β_f,2 = exit **flow** angle (Karassik subscript f = "direction of the flow"), tan β_f2 = φ₂/(1 − ψᵢ); the blade angle would give Q_DR > Q_BEP. β₁ = atan(φₑ), which matches Table 16's own sample (tan β₁ = 0.3 at 16.7°). R = NPSHa/NPSHr. K₃ uses the configuration dropdown. K₄ = 1 (continuous) or 0.7 (intermittent, "<25% of total operating time"). K₅ = 1. **Validated:** reproduces Table 16 part B (C_SR = 0.1618; Q_SR = 24.04 vs the book's 24.03 ft³/s). |
+| Casing liquid hold-up | inlet turning region Aₑ·b₁ + impeller annulus π(r₂² − rₑ²)(b₁+b₂)/2 + volute (A_t/2)·2π(r₃ + √A_t/2); b₁ = Aₑ/(2πrₑ) | this tool's geometric construction | **Lower bound**: excludes shroud side gaps, nozzles and suction-pipe backflow, so a deadhead heating rate built on it errs fast (conservative). The default duty gives 0.33 gal (2.8 lb). |
+| Data-sheet Max. Work Pres. | max(peak head on the curve, upper shutoff band k_ex = 0.3) × SG/2.31 | conservative choice for a casing rating | Still a differential; doesn't add max suction pressure. |

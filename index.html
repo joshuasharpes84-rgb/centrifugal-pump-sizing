@@ -114,6 +114,9 @@
     .sum-arrow { display: inline-block; width: 16px; text-align: center; font-size: 11px; color: var(--muted); transition: transform .18s; flex-shrink: 0; }
     details[open] > summary .sum-arrow { transform: rotate(90deg); }
     .sum-title { flex: 1; }
+    .sum-gh { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: var(--blue); background: var(--white); padding: 3px 9px; border-radius: 20px; border: 1px solid var(--blue); text-decoration: none; flex-shrink: 0; margin-left: 8px; }
+    .sum-gh:hover { background: var(--blue); color: #fff; }
+    @media (max-width: 560px) { .sum-gh span { display: none; } }
     .sum-count { font-size: 11px; font-weight: 600; color: var(--muted); background: var(--white); padding: 2px 8px; border-radius: 20px; border: 1px solid var(--border); flex-shrink: 0; }
     .details-body { padding: 20px 0 4px; }
 
@@ -328,6 +331,7 @@
       <summary>
         <span class="sum-arrow">›</span>
         <span class="sum-title">Centrifugal Pump Sizing — Case Study Tool</span>
+        <a class="sum-gh" href="https://github.com/joshuasharpes84-rgb/centrifugal-pump-sizing" target="_blank" rel="noopener" title="Method, sources and code - README written for engineers and their AI assistants" onclick="event.stopPropagation()"><svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>Method &amp; code</span></a>
         <span class="sum-count">USC/SI toggle</span>
       </summary>
       <div class="details-body">
@@ -397,8 +401,8 @@
   <div class="field">
     <label>Rated head, H <span class="unit" id="cps-unit-H">ft</span></label>
     <div class="sliderRow">
-      <input type="range" id="cps-H_slider" min="15" max="1000" step="1" value="250">
-      <input type="number" id="cps-H" min="15" max="1000" step="any" value="250">
+      <input type="range" id="cps-H_slider" min="15" max="1000" step="1" value="300">
+      <input type="number" id="cps-H" min="15" max="1000" step="any" value="300">
     </div>
   </div>
   <div class="field">
@@ -481,9 +485,24 @@
   <details class="resultPanel" id="cps-panel-curve">
     <summary>Predicted performance curve — trim-diameter family <span class="slidetag">slide 21</span></summary>
     <div class="resultPanel-body">
-    <div class="note">Family generated via standard affinity-law scaling (Q∝D, H∝D²) of the sized (100%) curve — the same method vendor curve sheets use to show a trim range off one tested casing. Blade angle + BEP-locked slip velocity held fixed across flow; dashed segment near shutoff is interpolated, not modeled. Each trim is a scaled copy of the same underlying shape (affinity laws don't independently re-derive a curve per diameter), so all trims look near-linear together at low-to-mid Ωₛ — expected physics per Karassik (rise-to-shutoff curvature grows with specific speed; see the gap note below), not a rendering bug.</div>
+    <div class="note">Family generated via standard affinity-law scaling (Q∝D, H∝D²) of the sized (100%) curve — the same method vendor curve sheets use to show a trim range off one tested casing. Blade angle + BEP-locked slip velocity held fixed across flow, computed down to half the BEP flow; the dashed segment below that is a blend into the Stepanoff shutoff head, per Karassik p.2.68. Each trim is a scaled copy of the same underlying shape (affinity laws don't independently re-derive a curve per diameter), so all trims look near-linear together at low-to-mid Ωₛ — expected physics per Karassik (rise-to-shutoff curvature grows with specific speed; see the gap note below), not a rendering bug.</div>
     <svg class="chart" id="cps-chartHQ" viewBox="0 0 640 320"></svg>
     <svg class="chart" id="cps-chartBHP" viewBox="0 0 640 220" style="margin-top:12px;"></svg>
+    </div>
+  </details>
+
+  <details class="resultPanel" id="cps-panel-lowflow">
+    <summary>Low-flow limits & shutoff <span class="slidetag">Karassik §2.1.1 Eq. 65–67, Table 16</span></summary>
+    <div class="resultPanel-body">
+    <div class="grid3">
+      <div class="stat"><div class="v" id="cps-out_Hso2"></div><div class="l">Shutoff head (Stepanoff ψ<sub>s/o</sub> = 0.585)</div><div class="s" id="cps-out_Hso_band"></div></div>
+      <div class="stat"><div class="v" id="cps-out_Pso"></div><div class="l">Shutoff power (Mockridge, Fig. 23)</div><div class="s" id="cps-out_Pso_note"></div></div>
+      <div class="stat"><div class="v" id="cps-out_holdup"></div><div class="l">Casing liquid hold-up (lower bound)</div><div class="s" id="cps-out_holdup_note"></div></div>
+      <div class="stat"><div class="v" id="cps-out_Qmin_cont"></div><div class="l">Minimum flow — continuous (Table 16)</div><div class="s" id="cps-out_Qmin_note"></div></div>
+      <div class="stat"><div class="v" id="cps-out_Qmin_int"></div><div class="l">Minimum flow — intermittent (K₄=0.7)</div><div class="s">&lt;25% of operating time</div></div>
+      <div class="stat"><div class="v" id="cps-out_betaF2"></div><div class="l">Exit flow angle β<sub>f,2</sub></div><div class="s" id="cps-out_betaF2_note"></div></div>
+    </div>
+    <div class="note" style="margin-top:12px; margin-bottom:0;">These feed the parallel-pump changeover check: <a id="cps-changeoverLink" href="tools/pump-changeover-simulator.html" target="_blank" rel="noopener">open the Pump Changeover Simulator with this pump →</a></div>
     </div>
   </details>
 
@@ -572,9 +591,36 @@ const K1_TAU=1.69, K2_TAU=0.102, PHI_E_CAP=0.30, RS_RE_SEED=0.40;  // Step 6: Ta
 // Shape-of-curve shock/incidence loss (slide 21's own eq (c) names this loss but gives no k --
 // functional form is Stepanoff (1957) / Conrad et al., via Perissinotto et al. 2024 eqs 13-14;
 // K_SHO itself is NOT from any of those sources (they call it impeller-specific / needs cascade
-// data) -- it's derived here by requiring the shock-augmented curve's Q=0 value to land on this
-// tool's own already-implemented Stepanoff shutoff head (line ~488). See sizing_tool_parameter_limits.md.
+// data) -- it was derived by requiring the shock-augmented curve's Q=0 value to land on this
+// tool's Stepanoff shutoff head. As of 2026-10-12 the 1-D curve stops at half BEP flow and a
+// separate blend carries it to that shutoff value (Karassik p.2.68), so K_SHO only shapes the
+// 50-135% range. See sizing_tool_parameter_limits.md.
 const K_SHO = 1.0;
+// Shut-off head, Karassik §2.1.1 Eq. 65/66 (p.2.50): H_s/o = [k_imp(U_t2² - U_h1²) + k_ex·U2²]/2g.
+// Used ONLY as a cross-check on the Stepanoff value below. "kimp ≈ 1"; k_ex "0.2 ± 0.1" (central used). Hub radius at blade
+// inlet r_h1 is taken as the torque-sized shaft radius r_s (the impeller hub bores onto the shaft in
+// either configuration) -- a stand-in, since this tool doesn't size the hub itself.
+const K_IMP = 1.0, K_EX = 0.2;          // Eq. 65/66 cross-check only
+const PSI_SO_STEPANOFF = 0.585;          // shut-off head coefficient used (Stepanoff 1957 §9.3; Karassik p.2.50)
+// Shut-off power, Mockridge correlation, Karassik §2.1.1 Eq. 67 / Fig. 23 (p.2.51):
+//   K = shut-off hp / [(N/1000)^3 · (D2[in]/10)^5 · SG]  vs  b2/D2,   P̂_s/o = 0.01966·K.
+// Points DIGITIZED BY EYE from the scanned Fig. 23 fitted curve (log-log, 300 dpi, 2026-10-13);
+// read accuracy ~±5-10% in K. Interpolated log-log; outside 0.01-0.36 it's clamped and flagged.
+const MOCKRIDGE_K = [[0.01,0.23],[0.02,0.29],[0.03,0.40],[0.04,0.50],[0.05,0.59],[0.06,0.77],
+                     [0.07,0.94],[0.08,1.15],[0.10,1.55],[0.20,3.55],[0.30,7.5],[0.36,10.0]];
+function mockridgeK(b2D2){
+  const t=MOCKRIDGE_K, x=Math.min(Math.max(b2D2,t[0][0]),t[t.length-1][0]);
+  for(let i=1;i<t.length;i++){
+    if(x<=t[i][0]){
+      const f=(Math.log(x)-Math.log(t[i-1][0]))/(Math.log(t[i][0])-Math.log(t[i-1][0]));
+      return Math.exp(Math.log(t[i-1][1])+f*(Math.log(t[i][1])-Math.log(t[i-1][1])));
+    }
+  }
+  return t[t.length-1][1];
+}
+// Minimum flow, Karassik §2.1.1 Table 16 (p.2.81, Gopalakrishnan / Fraser). K4 = 0.7 is Karassik's
+// "operation at minimum flow less than 25% of total operating time" -- the intermittent case.
+const QMIN_K4_INTERMITTENT = 0.7;
 const BETA_PRIMARY=[15,35], BETA_FALLBACK=[10,60];
 const TRIM_FRACTIONS=[0.80,0.85,0.90,0.95,1.00];
 const CORNER_LOWQ_HIGHH = {Q:50, H:500};
@@ -603,6 +649,8 @@ function usToSi(kind, v){
     case 'press': return v*6.894757;      // psi(a) -> kPa
     case 'power': return v*0.7456999;     // hp -> kW
     case 'force': return v*4.448222;      // lbf -> N
+    case 'mass': return v*0.4535924;      // lb -> kg
+    case 'vol': return v*3.785412;        // US gal -> L
     case 'temp': return (v-32)/1.8;       // degF -> degC (affine)
     default: return v;
   }
@@ -617,6 +665,8 @@ function siToUs(kind, v){
     case 'press': return v/6.894757;
     case 'power': return v/0.7456999;
     case 'force': return v/4.448222;
+    case 'mass': return v/0.4535924;
+    case 'vol': return v/3.785412;
     case 'temp': return v*1.8+32;
     default: return v;
   }
@@ -625,6 +675,7 @@ const UNIT_LABEL = {
   flow:{us:'gpm',si:'m³/h'}, len_ft:{us:'ft',si:'m'}, len_in:{us:'in',si:'mm'},
   area_in2:{us:'in²',si:'mm²'}, vel:{us:'ft/s',si:'m/s'}, press:{us:'psi',si:'kPa'},
   power:{us:'hp',si:'kW'}, force:{us:'lbf',si:'N'}, temp:{us:'°F',si:'°C'},
+  mass:{us:'lb',si:'kg'}, vol:{us:'gal',si:'L'},
 };
 function fmtU(usValue, kind, decUS=2, decSI){
   if(usValue==null || !isFinite(usValue)) return '—';
@@ -865,10 +916,17 @@ function sizePump(Q_gpm, H_ft, SG, visc_cP, NPSHa_ft, marginRatio, solids, confi
   const bhp_first = (P_hyd/etaTotal_first)*HP_PER_W;
   const bhp_jekat = (P_hyd/(etaHY_jekat*etam_first*etav_first))*HP_PER_W;
 
-  const Hshutoff_ft = 0.585*U2*U2/G_SI*FT_PER_M;
-  gaps.push("Shutoff head uses Stepanoff's psi_s/o~0.585 shortcut, not the full k_imp/k_ex formula (slide 21) -- needs hub-inlet tip speed not resolved here. (This shortcut is now also the calibration anchor for the shock-loss curvature term below.)");
-  gaps.push('Shutoff power / non-overload BHP (Mockridge correlation, Fig. 23, slide 21) -- chart-only, not implemented.');
-  gaps.push("Minimum continuous stable flow (Fraser's Q_SR/Q_DR, slide 24) -- correlation cited, not its equation; not implemented.");
+  // Shut-off head, Eq. 65/66 (constants block above): central k_ex and the ±0.1 band.
+  // Shut-off head: Stepanoff's psi_s/o = 0.585 (Centrifugal and Axial Flow Pumps, 1957, §9.3) -- one
+  // constant fitted to test data across all specific speeds and discharge angles, adopted by Karassik
+  // (§2.1.1 p.2.50, "the value of 0.585 being advanced by Stepanoff"; his design example landed on 0.596).
+  // Chosen over Eq. 65/66 as THE method (2026-10-13) because Eq. 65 needs k_ex (given only as 0.2 +/- 0.1)
+  // and a hub radius this tool doesn't size. Eq. 65 at k_ex 0.2 is kept as a cross-check only.
+  const psiSO = PSI_SO_STEPANOFF;
+  const Hshutoff_ft = psiSO*U2*U2/G_SI*FT_PER_M;
+  const psiEq65 = (K_IMP*(1 - Math.pow(rs_si/r2_si,2)) + K_EX)/2;
+  const Hshutoff_eq65_ft = psiEq65*U2*U2/G_SI*FT_PER_M;
+  gaps.push(`Shutoff head uses Stepanoff's psi_s/o = 0.585 (test-data constant, adopted by Karassik p.2.50). Cross-check, Karassik Eq. 65/66 at k_ex = 0.2: psi_s/o = ${fmt(psiEq65,3)} (${fmt((psiEq65/psiSO-1)*100,1)}%). Individual pumps scatter around this: Stepanoff reports ~10% from casing details alone (volute throat, impeller-to-tongue gap, impeller position), which sizing can't resolve -- a vendor's tested shutoff head overrides it.`);
   gaps.push('Suction/discharge nozzle sizing (velocity-based) -- not covered anywhere in the deck.');
 
   // ---- collector: volute always present; vaned diffuser ADDED (not chosen) above the U2 threshold ----
@@ -889,6 +947,24 @@ function sizePump(Q_gpm, H_ft, SG, visc_cP, NPSHa_ft, marginRatio, solids, confi
   const rt_si = r3_si;
   const Vt = kThroat*r2_si*Vu2/rt_si;
   const At_si = Q_si/Vt;
+
+  // ---- liquid hold-up in the casing (basis for deadhead heating; computed, not a user input) ----
+  // Geometric estimate from the sized pump (this tool's construction, not a handbook formula):
+  //  * blade-inlet width b1 from continuity through the eye (axial-to-radial turn at the eye's own
+  //    meridional velocity): b1 = A_e/(2*pi*r_e)
+  //  * inlet turning region: A_e * b1
+  //  * impeller passages: annulus r_e..r2, width tapering linearly b1 -> b2 (blade thickness ignored)
+  //  * volute: section grows linearly from 0 at the tongue to A_t over 360 deg (constant-velocity
+  //    volute), so mean section A_t/2 on a centroid radius r3 + sqrt(A_t)/2
+  // LOWER BOUND: leaves out shroud side gaps, nozzles, and the suction-pipe backflow region, so a
+  // deadhead heating rate built on it errs fast (conservative).
+  const b1_si = (re_si*re_si - rsEye_si*rsEye_si)/(2*re_si);
+  const Vhold_inlet = Ae_si*b1_si;
+  const Vhold_imp   = Math.PI*(r2_si*r2_si - re_si*re_si)*(b1_si + b2_si)/2;
+  const Vhold_volute= (At_si/2)*2*Math.PI*(r3_si + Math.sqrt(At_si)/2);
+  const Vhold_m3 = Vhold_inlet + Vhold_imp + Vhold_volute;
+  const holdup_gal = Vhold_m3*264.172, holdup_lb = Vhold_m3*rho*2.204623;
+  gaps.push(`Casing liquid hold-up ${fmt(holdup_gal,2)} gal (${fmt(holdup_lb,1)} lb) is a geometric LOWER BOUND from the sized impeller + volute (b1 from eye continuity, linear-growth volute); it leaves out side gaps, nozzles and suction backflow, so deadhead heating built on it errs fast.`);
   gaps.push('Collector throat radius r_t approximated as base-circle r_3 (placeholder) -- real value needs the volute spiral construction (r*Vu=const, slide 16), no closed form.');
   gaps.push(`Diffuser-add threshold (U2 > ${DIFFUSER_U2_THRESHOLD_FTS} ft/s) is this tool's own judgment call -- slide 15's "common w/ higher impeller speeds" is qualitative, not numeric.`);
 
@@ -945,7 +1021,12 @@ function sizePump(Q_gpm, H_ft, SG, visc_cP, NPSHa_ft, marginRatio, solids, confi
   // sweep fractions ALWAYS include 1.00 exactly, so the curve has a guaranteed point at the
   // target flow -- this is what "target duty" gets marked against, not the raw input H, since
   // the two can differ by the blade-angle convergence residual (see usedFallback gap above).
-  const fracs = [0.35,0.40,0.45,0.50,0.55,0.60,0.65,0.70,0.75,0.80,0.85,0.90,0.95,1.00,
+  // The 1-D sweep stops at HALF the BEP flow: the analysis only holds where there's no recirculation
+  // (Karassik §2.1.1 p.2.50), and Karassik's own design example blends the empirical shutoff values
+  // "into the one-dimensionally computed curves at half of the BEP flow rate" (p.2.68). Below that,
+  // see the low-flow blend after this sweep. (Previously swept to 0.35 -- 1-D points inside the
+  // recirculation range, which overshot the shutoff anchor and drew a false hump.)
+  const fracs = [0.50,0.55,0.60,0.65,0.70,0.75,0.80,0.85,0.90,0.95,1.00,
                  1.05,1.10,1.15,1.20,1.25,1.30,1.35];
   const Q_curve=[], H_curve=[];
   let bepPoint = null;
@@ -957,11 +1038,37 @@ function sizePump(Q_gpm, H_ft, SG, visc_cP, NPSHa_ft, marginRatio, solids, confi
   });
   if(!bepPoint) bepPoint = curvePointAt(1.00) || {Q_gpm, H_ft};
   const curveResidualPct = (bepPoint.H_ft - H_ft)/H_ft*100;
-  gaps.push("Performance curve near shutoff is not modeled (deck's own stated limitation); trim family uses standard affinity-law scaling (Q~D, H~D^2) of the full-diameter curve, not an independent solve per diameter.");
+  gaps.push("Below half the BEP flow the curve is a blend, not a model: cubic Hermite from the empirical shutoff head (zero slope at Q=0) into the 1-D curve's value and slope at 0.5·Q_BEP, per Karassik §2.1.1 p.2.68 (Fritsch-Carlson slope limit so a falling segment can't overshoot). Trim family uses standard affinity-law scaling (Q~D, H~D^2) of the full-diameter curve, not an independent solve per diameter.");
+
+  // ---- low-flow blend: empirical shutoff (Q=0) -> 1-D curve at 0.5*Q_BEP (Karassik p.2.68) ----
+  const blendQ=[], blendH=[];
+  const pB = curvePointAt(0.50), pB2 = curvePointAt(0.55);
+  if(pB && pB2){
+    const x1=pB.Q_gpm, H1=pB.H_ft, H0=Hshutoff_ft;
+    let m1 = (pB2.H_ft-pB.H_ft)/(pB2.Q_gpm-pB.Q_gpm);   // 1-D slope at the blend point, ft/gpm
+    const sec = (H1-H0)/x1;
+    if(sec<0 && m1<0 && m1/sec>3) m1 = 3*sec;          // Fritsch-Carlson monotonicity limit
+    if(sec>=0) m1 = 0;   // shutoff at/below H1: no falling blend exists; a zero end slope keeps the blend
+                         // between its endpoints (no overshoot past H1) at the cost of a slope kink at 0.5*Q_BEP
+    for(let k=0; k<=10; k++){
+      const t=k/10;
+      const h00=2*t*t*t-3*t*t+1, h01=-2*t*t*t+3*t*t, h11=t*t*t-t*t;   // start slope = 0 (flat at shutoff)
+      blendQ.push(x1*t); blendH.push(h00*H0 + h01*H1 + h11*x1*m1);
+    }
+    if(H1 >= H0){
+      gaps.push(`Low-flow shape: the empirical shutoff head (${fmt(H0,0)} ft) is at or below the 1-D head at half BEP flow (${fmt(H1,0)} ft), so the blended curve is flat-to-humped over 0-50% flow (peak ${fmt(Math.max(...blendH),0)} ft) -- drawn as computed, not smoothed over. A difference this size is within the accuracy of the shutoff correlation; read it as "flat near shutoff," the typical low-specific-speed shape (Karassik Fig. 16A, Section 11.1).`);
+    }
+  }
+  const allH = [...blendH, ...H_curve];
+  const Hmax_ft = allH.length ? Math.max(...allH) : Hshutoff_ft;   // highest head anywhere on the curve
+  const riseToShutoffPct = (Hshutoff_ft/bepPoint.H_ft - 1)*100;
+  if(riseToShutoffPct < 15){
+    banners.push(['warn', `Rise to shutoff is ${fmt(riseToShutoffPct,0)}% (shutoff ${fmt(Hshutoff_ft,0)} ft vs ${fmt(bepPoint.H_ft,0)} ft at BEP). Karassik §2.1.1 p.2.57: a stable curve wants at least 15-20% more head at shutoff than at BEP, and this conflict is "more likely to occur with low-specific-speed pumps" -- the remedy is a lower BEP head coefficient than Fig. 12 gives. Matters most for parallel operation, where a flat or rising curve makes the flow split ambiguous.`]);
+  }
   if(Math.abs(curveResidualPct)>1){
     gaps.push(`Curve's own achieved head at your target Q (${fmt(bepPoint.H_ft,1)} ft) differs from the requested H (${fmt(H_ft,0)} ft) by ${fmt(curveResidualPct,1)}% -- this is the same blade-angle convergence residual flagged above, now visible on the chart. The plotted "target duty" marker sits on the curve's own value, not the raw input, so the gap is honest rather than hidden.`);
   }
-  gaps.push(`A shock/incidence-loss term (Stepanoff 1957 / Conrad et al., via Perissinotto et al. 2024 eqs 13-14) is added on top of the velocity-triangle/Table-3 terms -- H_shock = (K_SHO/2g)*[((Q-Q_BEP)/Q_BEP)*U_e]^2, K_SHO=${K_SHO}, back-solved (not from either cited source) to match this tool's own Stepanoff shutoff head at Q=0. This is real but genuinely SMALL across this tool's whole scope (~0.5-1% visible bow, checked at both ends of the Omega_s 0.37-1.0 radial band) -- and per Karassik Section 2.1.1 p.2.45, that's expected physics, not a shortfall: a substantial "rise to shutoff" is specifically a HIGH-specific-speed effect (Fig. 22 discussion -- low-Omega_s impellers have a small eye relative to max diameter, keeping Vtheta2/U2 high and near-constant across flow), and this tool's scope gate caps at Omega_s=1.0 (Ns~2733), below where that effect becomes dramatic. So: near-linear curves for this tool's typical (low-to-mid Omega_s) cases are largely correct, not a bug -- don't force more curvature than the physics at this specific speed actually supports. Friction loss (~Q^2, Table 3 eq (c)'s other term) is still not implemented -- needs passage hydraulic diameter/length this tool doesn't model.`);
+  gaps.push(`A shock/incidence-loss term (Stepanoff 1957 / Conrad et al., via Perissinotto et al. 2024 eqs 13-14) is added on top of the velocity-triangle/Table-3 terms -- H_shock = (K_SHO/2g)*[((Q-Q_BEP)/Q_BEP)*U_e]^2, K_SHO=${K_SHO}, back-solved (not from either cited source) against this tool's Stepanoff shutoff head; since the 1-D curve now stops at half BEP flow (low-flow blend above), K_SHO only shapes the 50-135% range. This is real but genuinely SMALL across this tool's whole scope (~0.5-1% visible bow, checked at both ends of the Omega_s 0.37-1.0 radial band) -- and per Karassik Section 2.1.1 p.2.45, that's expected physics, not a shortfall: a substantial "rise to shutoff" is specifically a HIGH-specific-speed effect (Fig. 22 discussion -- low-Omega_s impellers have a small eye relative to max diameter, keeping Vtheta2/U2 high and near-constant across flow), and this tool's scope gate caps at Omega_s=1.0 (Ns~2733), below where that effect becomes dramatic. So: near-linear curves for this tool's typical (low-to-mid Omega_s) cases are largely correct, not a bug -- don't force more curvature than the physics at this specific speed actually supports. Friction loss (~Q^2, Table 3 eq (c)'s other term) is still not implemented -- needs passage hydraulic diameter/length this tool doesn't model.`);
 
   const BHP_curve = Q_curve.map((Qp,i)=>{
     const Hp=H_curve[i], Qp_si=Qp*GPM_TO_M3S;
@@ -969,6 +1076,47 @@ function sizePump(Q_gpm, H_ft, SG, visc_cP, NPSHa_ft, marginRatio, solids, confi
     return (P_hyd_p/etaTotal_final)*HP_PER_W;
   });
   const bhp_at_target = (rho*G_SI*(Q_gpm*GPM_TO_M3S)*(bepPoint.H_ft*M_PER_FT)/etaTotal_final)*HP_PER_W;
+
+  // ---- shut-off power (Mockridge, Eq. 67 / Fig. 23) + low-flow power blend ----
+  const D2_in_ = 2*r2_si*FT_PER_M*12, b2D2 = b2_si/(2*r2_si);
+  const mockK = mockridgeK(b2D2);
+  const Pso_hp = mockK*Math.pow(N_rpm/1000,3)*Math.pow(D2_in_/10,5)*SG;
+  const PsoHat = 0.01966*mockK;
+  if(b2D2<MOCKRIDGE_K[0][0] || b2D2>MOCKRIDGE_K[MOCKRIDGE_K.length-1][0]){
+    gaps.push(`b2/D2=${fmt(b2D2,3)} is outside Mockridge's Fig. 23 data range (0.01-0.36); shutoff power uses the clamped end value.`);
+  }
+  gaps.push(`Shutoff power ${fmt(Pso_hp,1)} hp from Mockridge's correlation (Karassik Eq. 67 / Fig. 23, K=${fmt(mockK,2)} at b2/D2=${fmt(b2D2,3)}, curve digitized by eye ±5-10%) -- Karassik calls it "probably the most significant quantitative result available" for shutoff short of CFD. Cross-check: the generic Fig. 16A/B (Section 11.1) power curves put shutoff at roughly 40-50% of rated power for n_s 600-1500, versus ${fmt(Pso_hp/bhp_final*100,0)}% here. Below half BEP flow the power curve is a straight-line blend from this shutoff value.`);
+  const BHP_blend = [];
+  if(blendQ.length && BHP_curve.length){
+    const P1 = BHP_curve[0];
+    blendQ.forEach((q,i)=>{ const t=i/(blendQ.length-1); BHP_blend.push(Pso_hp + t*(P1-Pso_hp)); });
+  }
+
+  // ---- minimum flow, Karassik §2.1.1 Table 16 ----
+  // beta_f,2 is the exit FLOW angle (subscript f = "direction of the flow", Karassik nomenclature) --
+  // relative-velocity angle with slip: tan(beta_f2) = phi_2/(1 - psi_i). Using the blade angle here
+  // instead gives Q_DR > Q_BEP for the default case, which is impossible.
+  const betaF2_deg = Math.atan(phi_exit/(1-psi_i))*180/Math.PI;
+  const C_DR = -0.01 + betaF2_deg/218.75;
+  const Q_DR_si = Math.PI*Math.pow(2*r2_si,2)*b2_si*(Omega_rad/2)*C_DR;
+  // beta_1 at the eye tip with no prerotation: tan(beta_1) = phi_e (Karassik's Table 16 sample uses
+  // tan(beta_1)=0.3 at beta_1=16.7 deg, i.e. exactly this relation at the phi_e cap).
+  const beta1_deg = Math.atan(phiE)*180/Math.PI;
+  const C_SR = Math.tan(beta1_deg*Math.PI/180)*(1 - 0.2091*Math.pow(Math.max(beta1_deg-9.5,0),0.4));
+  const Ds_eye = 2*rsEye_si, De_si = 2*re_si;
+  const Q_SR_si = Math.PI*Omega_rad*Math.pow(re_si,3)*(1 - (Ds_eye*Ds_eye)/(De_si*De_si))*C_SR;
+  const QR_isSR = De_si >= 0.5*(2*r2_si);
+  const Q_R_gpm = (QR_isSR ? Q_SR_si : Q_DR_si)/GPM_TO_M3S;
+  const qK1 = 0.06862*((N_rpm-1800)/1700) - 0.4529 + 0.3843*Math.log10(Q_gpm);
+  const qK2 = SG;
+  const qR  = NPSHa_ft/NPSHr_ft;
+  const qK3 = (config==='between_bearings' ? 0.6+0.4*Math.pow((4/qR-1)/3,1.1) : 0.7+0.3*Math.pow((4/qR-1)/3,1.1));
+  const Kprod_cont = Math.min(1, qK1*qK2*qK3*1), Kprod_int = Math.min(1, qK1*qK2*qK3*QMIN_K4_INTERMITTENT);
+  const Qmin_cont_gpm = Q_R_gpm*Kprod_cont, Qmin_int_gpm = Q_R_gpm*Kprod_int;
+  if(!(Qmin_cont_gpm>0) || Qmin_cont_gpm >= Q_gpm){
+    banners.push(['warn', `Minimum-flow estimate (Karassik Table 16) came out ${isFinite(Qmin_cont_gpm)?fmt(Qmin_cont_gpm,0)+' gpm':'undefined'} -- at or beyond the rated flow, outside where the correlation is meaningful. Treat as unresolved for this geometry.`]);
+  }
+  gaps.push(`Minimum flow per Karassik Table 16: Q_R = ${QR_isSR?'Q_SR (De >= 0.5 D2)':'Q_DR (De < 0.5 D2)'} = ${fmt(Q_R_gpm,0)} gpm; K1=${fmt(qK1,3)}, K2=SG=${fmt(qK2,3)}, K3=${fmt(qK3,3)} (R=NPSHa/NPSHr=${fmt(qR,2)}, ${config==='between_bearings'?'shaft through eye':'end-suction'}), K5=1. Continuous K4=1; intermittent K4=0.7 ("less than 25% of total operating time"). beta_f2=${fmt(betaF2_deg,1)} deg (exit flow angle), beta_1=atan(phi_e)=${fmt(beta1_deg,1)} deg.`);
 
   return {gaps:[...new Set(gaps)], banners, NPSHr_ft, NPSHa_ft, speedRows, selectedPoles, N_rpm,
     Nss_sel, nssStatus, Omega_s, Ns_us, classification, classStatus,
@@ -979,12 +1127,30 @@ function sizePump(Q_gpm, H_ft, SG, visc_cP, NPSHa_ft, marginRatio, solids, confi
     etaHY_detailed, etam_first, etav_first, etaTotal_first, bhp_first, bhp_jekat, Hshutoff_ft,
     thrust_lbf, thrust_lbf_naive: thrust_N_naive*LBF_PER_N, p2_psi: p2_pa/PA_PER_PSI,
     mechanism, mechDesc, etaTotal_final, bhp_final, Q_curve, H_curve, BHP_curve,
-    bepPoint, bhp_at_target, curveResidualPct};
+    bepPoint, bhp_at_target, curveResidualPct, blendQ, blendH, Hmax_ft, riseToShutoffPct,
+    psiSO, Hshutoff_eq65_ft, Hmax_casing_ft: Hmax_ft,
+    Pso_hp, PsoHat, mockK, b2D2, BHP_blend,
+    betaF2_deg, beta1_deg, Q_R_gpm, QR_isSR, Qmin_cont_gpm, Qmin_int_gpm, qK1, qK2, qK3,
+    holdup_gal, holdup_lb};
 }
 
 // =====================================================================================
 // Chart rendering (multi-series SVG with gridlines, ticks, legend)
 // =====================================================================================
+// Pump hand-off to tools/pump-changeover-simulator.html: everything the simulator needs, in US units,
+// passed as JSON in the URL hash (no server; both pages stay self-contained).
+function buildChangeoverHandoff(res, fluid, T_F, SG, vp_psia, Q_gpm){
+  const r=(x,d)=>Math.round(x*Math.pow(10,d))/Math.pow(10,d);
+  const Q=[...res.blendQ.slice(0,-1), ...res.Q_curve], H=[...res.blendH.slice(0,-1), ...res.H_curve];
+  const P=[...res.BHP_blend.slice(0,-1), ...res.BHP_curve];
+  return {v:1, fluid, T_F:r(T_F,1), SG:r(SG,4), vp_psia:r(vp_psia,4), config:res.config,
+    Q_bep:r(Q_gpm,1), H_bep:r(res.bepPoint.H_ft,2), N_rpm:res.N_rpm, Ns:r(res.Ns_us,0), D2_in:r(res.D2_in,3),
+    Q:Q.map(x=>r(x,1)), H:H.map(x=>r(x,2)), P:P.map(x=>r(x,2)),
+    Hso:r(res.Hshutoff_ft,2), Hso_eq65:r(res.Hshutoff_eq65_ft,2),
+    Pso_hp:r(res.Pso_hp,2), bhp_bep:r(res.bhp_at_target,2),
+    Qmin_cont:r(res.Qmin_cont_gpm,1), Qmin_int:r(res.Qmin_int_gpm,1),
+    holdup_lb:r(res.holdup_lb,3), holdup_gal:r(res.holdup_gal,4)};
+}
 function niceTicks(min, max, n){
   const step = (max-min)/n;
   const ticks=[]; for(let i=0;i<=n;i++) ticks.push(min+i*step);
@@ -1149,6 +1315,21 @@ function runSizing(){
   document.getElementById('cps-out_thrust_naive').textContent=`uncorrected: ${fmtU(res.thrust_lbf_naive,'force',0)}`;
   document.getElementById('cps-out_p2').textContent=`${fmtU(res.p2_psi,'press',0)} (Δ over suction)`;
   document.getElementById('cps-out_Hshutoff').textContent=fmtU(res.Hshutoff_ft,'len_ft',0);
+  document.getElementById('cps-out_Hso2').textContent=fmtU(res.Hshutoff_ft,'len_ft',0);
+  document.getElementById('cps-out_Hso_band').textContent=`Eq. 65 cross-check ${fmtU(res.Hshutoff_eq65_ft,'len_ft',0)}; rise to shutoff ${fmt(res.riseToShutoffPct,0)}%`;
+  document.getElementById('cps-out_Pso').textContent=fmtU(res.Pso_hp,'power',1);
+  document.getElementById('cps-out_Pso_note').textContent=`${fmt(res.Pso_hp/res.bhp_final*100,0)}% of rated BHP; K=${fmt(res.mockK,2)} at b₂/D₂=${fmt(res.b2D2,3)}`;
+  document.getElementById('cps-out_holdup').textContent=`${fmtU(res.holdup_gal,'vol',2)} / ${fmtU(res.holdup_lb,'mass',1)}`;
+  document.getElementById('cps-out_holdup_note').textContent='impeller + volute only; excludes side gaps, nozzles';
+  document.getElementById('cps-out_Qmin_cont').textContent=fmtU(res.Qmin_cont_gpm,'flow',0);
+  document.getElementById('cps-out_Qmin_note').textContent=`${fmt(res.Qmin_cont_gpm/Q_gpm,2)}·Q_BEP; Q_R = ${res.QR_isSR?'Q_SR':'Q_DR'} = ${fmtU(res.Q_R_gpm,'flow',0)}`;
+  document.getElementById('cps-out_Qmin_int').textContent=fmtU(res.Qmin_int_gpm,'flow',0);
+  document.getElementById('cps-out_betaF2').textContent=`${fmt(res.betaF2_deg,1)}°`;
+  document.getElementById('cps-out_betaF2_note').textContent=`vs blade angle ${fmt(res.beta2b,1)}° (slip); used in Q_DR`;
+  try{
+    const hand = buildChangeoverHandoff(res, fluidSelect.value, valUS('T','temp'), SG, valUS('vp','press'), Q_gpm);
+    document.getElementById('cps-changeoverLink').href = 'tools/pump-changeover-simulator.html#p=' + encodeURIComponent(JSON.stringify(hand));
+  }catch(e){ document.getElementById('cps-changeoverLink').href = 'tools/pump-changeover-simulator.html'; }
   document.getElementById('cps-mechBox').innerHTML=`<b>Selected mechanism: ${res.mechanism}</b><br>${res.mechDesc}`;
 
   document.getElementById('cps-out_etaTotal_final').textContent=`${fmt(res.etaTotal_final*100,1)}%`;
@@ -1167,9 +1348,14 @@ function runSizing(){
       color: colors[i], width: tf===1.00?2.4:1.2, opacity: tf===1.00?1:0.85,
       label: `${fmtU(tf*D2full,'len_in',1)} (${fmt(tf*100,0)}%)`
     }));
-    const shutoffSeries = {points:[{x:0,y:hU(res.Hshutoff_ft)},{x:qU(res.Q_curve[0]),y:hU(res.H_curve[0])}], color:'#a8791f', width:1.4, dash:'4,3', label:'shutoff (interpolated)'};
+    const shutoffSeries = {points: res.blendQ.length
+        ? res.blendQ.map((q,i)=>({x:qU(q), y:hU(res.blendH[i])}))
+        : [{x:0,y:hU(res.Hshutoff_ft)},{x:qU(res.Q_curve[0]),y:hU(res.H_curve[0])}],
+      color:'#a8791f', width:1.4, dash:'4,3', label:'low-flow blend (Karassik p.2.68)'};
     svgMultiChart(document.getElementById('cps-chartHQ'), [shutoffSeries, ...hqSeries], {xlabel:`Q (${UNIT_LABEL.flow[UNIT_SYS]})`, ylabel:`H (${UNIT_LABEL.len_ft[UNIT_SYS]})`, markPoint:res.bepPoint ? {x:qU(res.bepPoint.Q_gpm), y:hU(res.bepPoint.H_ft)} : {x:qU(Q_gpm),y:hU(H_ft)}});
-    svgMultiChart(document.getElementById('cps-chartBHP'), [{points:res.Q_curve.map((q,i)=>({x:qU(q),y:pU(res.BHP_curve[i])})), color:'#3f8f6b', width:2.2, label:`${UNIT_LABEL.power[UNIT_SYS].toUpperCase()} @ 100% D`}],
+    const bhpBlendSeries = (res.BHP_blend && res.BHP_blend.length)
+      ? [{points:res.blendQ.map((q,i)=>({x:qU(q),y:pU(res.BHP_blend[i])})), color:'#a8791f', width:1.4, dash:'4,3', label:'low-flow blend (Mockridge shutoff)'}] : [];
+    svgMultiChart(document.getElementById('cps-chartBHP'), [...bhpBlendSeries, {points:res.Q_curve.map((q,i)=>({x:qU(q),y:pU(res.BHP_curve[i])})), color:'#3f8f6b', width:2.2, label:`${UNIT_LABEL.power[UNIT_SYS].toUpperCase()} @ 100% D`}],
       {xlabel:`Q (${UNIT_LABEL.flow[UNIT_SYS]})`, ylabel:UNIT_LABEL.power[UNIT_SYS], markPoint:{x:qU(Q_gpm), y:pU(res.bhp_at_target)}});
   }
   if(Math.abs(res.curveResidualPct)>1){
@@ -1243,7 +1429,7 @@ async function downloadDataSheet(){
           visc_cP=val('visc'), vp_psia=valUS('vp','press'), NPSHa_ft=valUS('NPSHa','len_ft');
     const solidsYes = document.getElementById('cps-solids').value==='yes';
     const dP_stage_psi = H_ft*SG/2.31;                       // same formula sizePump() uses internally
-    const maxWorkPres_psi = res.Hshutoff_ft*SG/2.31;          // shutoff-equivalent pressure -- a real casing-rating indicator
+    const maxWorkPres_psi = res.Hmax_casing_ft*SG/2.31;       // peak head on the curve (Stepanoff shutoff, or the 1-D peak if the curve droops) -- casing-rating indicator (differential; excludes suction pressure)
     const bhpNonOverload = (res.BHP_curve && res.BHP_curve.length) ? Math.max.apply(null, res.BHP_curve) : null;
 
     const bytes = await fetch('tools/pump-data-sheet-template.pdf').then(function(r){

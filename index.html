@@ -359,6 +359,72 @@
 <h1>Centrifugal Pump Sizing — Case Study Tool</h1>
 <div class="subtitle">Runs input duty conditions through the workflow in <em>Centrifugal Pump Sizing.pptx</em> (single-stage, radial/mixed-flow only). Fluid properties come from a precomputed <code>thermo</code> table (11 pure compounds) embedded in this file — fully self-contained, no backend, drops straight into a static site. Every slider is bounded per <code>sizing_tool_parameter_limits.md</code>; less-frequently-changed constants are fixed in code rather than exposed here.</div>
 
+<!-- Sources panel (portfolio rule 2026-10-27): kept in step with Centrifugal Pump\SOURCES.md; thumbnails = assets/source-thumbs/ from Not on Website/source_thumbs/build_source_thumbs.py -->
+<div id="cps-srcwrap">
+<style>
+#cps-srcwrap{margin:0 0 16px}
+#cps-srcwrap details.srcs{--sp-bg:var(--panel);--sp-bg2:var(--bg);--sp-line:var(--border);--sp-muted:var(--muted);--sp-ink:var(--heading);--sp-acc:var(--accent);display:block;margin:0;padding:0;border:1px solid var(--sp-line);border-radius:8px;background:var(--sp-bg);box-shadow:none;text-align:left}
+#cps-srcwrap details.srcs>summary{list-style:none;display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;padding:8px 12px;background:none;border:0;border-radius:8px;box-shadow:none;position:static;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sp-muted);user-select:none}
+#cps-srcwrap details.srcs>summary::-webkit-details-marker{display:none}
+#cps-srcwrap details.srcs>summary::marker{content:""}
+#cps-srcwrap details.srcs>summary::before{content:"\25B8";color:var(--sp-acc);width:12px}
+#cps-srcwrap details.srcs[open]>summary::before{content:"\25BE"}
+#cps-srcwrap details.srcs>summary:hover{background:none;color:var(--sp-acc)}
+#cps-srcwrap details.srcs .srcnote{margin:0;padding:0 12px 8px;font-size:12px;line-height:1.45;color:var(--sp-muted);font-style:normal}
+#cps-srcwrap details.srcs .srcgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin:0;padding:0 12px 12px}
+#cps-srcwrap details.srcs .src{display:grid;grid-template-columns:52px minmax(0,1fr);gap:10px;align-items:start;margin:0;padding:8px;background:var(--sp-bg);border:1px solid var(--sp-line);border-radius:6px;color:var(--sp-ink);text-decoration:none;box-shadow:none;transform:none}
+#cps-srcwrap details.srcs a.src:hover{border-color:var(--sp-acc)}
+#cps-srcwrap details.srcs .src img,#cps-srcwrap details.srcs .src .ico{display:block;width:52px;height:68px;margin:0;padding:0;object-fit:cover;object-position:top;border:1px solid var(--sp-line);border-radius:3px;background:var(--sp-bg2)}
+#cps-srcwrap details.srcs .src img.wide,#cps-srcwrap details.srcs .src .ico.wide{height:30px}
+#cps-srcwrap details.srcs .src .ico{display:grid;place-items:center;font-size:9px;font-weight:700;letter-spacing:.04em;color:var(--sp-muted)}
+#cps-srcwrap details.srcs .src b{display:block;margin:0;font-size:13px;line-height:1.25;font-weight:600;color:var(--sp-ink)}
+#cps-srcwrap details.srcs .src .w{display:block;margin:2px 0 0;font-size:11.5px;line-height:1.35;color:var(--sp-muted)}
+#cps-srcwrap details.srcs .src .k{display:block;margin:0 0 2px;font-style:normal;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--sp-acc)}
+#cps-srcwrap details.srcs .src .k.off{color:var(--sp-muted)}
+@media (max-width:560px){#cps-srcwrap details.srcs .srcgrid{grid-template-columns:minmax(0,1fr)}}
+</style>
+<details class="srcs">
+  <summary>Sources behind this tool <span id="cps-srccount"></span></summary>
+  <p class="srcnote">Decks and tools open on this site in a new tab. Books, papers and methods are cited, not linked. Detail by topic: SOURCES.md in the Method &amp; code repo.</p>
+  <div class="srcgrid" id="cps-srcgrid"></div>
+</details>
+<script>
+(function () {
+  var TH = window.SRC_THUMB_BASE || 'assets/source-thumbs/';
+  var SOURCES = [
+    ["deck-pump", "deck", "Centrifugal Pump Sizing", "The sizing workflow this tool runs, step by step", null],
+    ["karassik", "book", "Karassik et al., Pump Handbook, 4th ed., §2.1 (Cooper)", "Speed, NPSH and suction specific speed, impeller and collector geometry, performance curve, axial thrust, shutoff and minimum flow; validation case", null],
+    ["stepanoff", "book", "Stepanoff, Centrifugal and Axial Flow Pumps (1957)", "Shutoff-head coefficient ψ ≈ 0.585; low-n<sub>s</sub> curve droop", null],
+    ["perissinotto", "paper", "Perissinotto et al. (2024)", "Shock/incidence-loss form for the off-BEP curve (Stepanoff / Conrad), Eqs. 13–14", null],
+    ["adams", "paper", "Adams, TAMU Pump Symposium 2014", "\"High energy\" pump flag (ΔP per stage vs. Ω<sub>s</sub>)", null],
+    ["rot", "book", "Rules of Thumb for Chemical Engineers, 3rd ed.", "Pump data-sheet layout (p. 416) used for the PDF export", null],
+    ["perry9", "book", "Perry's 9th ed.", "Single-stage Q/H coverage band (Fig. 10-24-style chart) behind the input limits; sulfuric acid c<sub>p</sub> (Table 2-91)", null],
+    [null, "method", "thermo (Python library)", "Density, vapor pressure, viscosity and c<sub>p</sub> tables for the 11 fluids", null],
+    [null, "data", "CORECHEM sulfuric acid properties", "93 wt % viscosity table; Andrade fit replaces thermo's value (~25× low)", null]
+  ];
+  var grid = document.getElementById('cps-srcgrid');
+  if (!grid) return;
+  document.getElementById('cps-srccount').textContent = '\u00b7 ' + SOURCES.length;
+  grid.innerHTML = SOURCES.map(function (s) {
+    var kind = s[1], wide = kind === 'deck' ? ' wide' : '';
+    var linkable = kind === 'deck' || kind === 'tool', url = linkable ? s[4] : null, off = linkable && !url;
+    var img = s[0] ? '<img src="' + TH + s[0] + '.jpg" alt="" loading="lazy" class="' + wide.trim() + '" data-kind="' + kind + '">'
+                   : '<span class="ico' + wide + '">' + kind.toUpperCase() + '</span>';
+    var inner = img + '<div><i class="k' + (off ? ' off' : '') + '">' + kind + (off ? ' \u00b7 not on the site yet' : '') + '</i><b>' +
+                s[2] + (url ? ' \u2197' : '') + '</b><span class="w">' + s[3] + '</span></div>';
+    return url ? '<a class="src" href="' + url + '" target="_blank" rel="noopener">' + inner + '</a>' : '<div class="src">' + inner + '</div>';
+  }).join('');
+  Array.prototype.forEach.call(grid.querySelectorAll('img'), function (im) {
+    im.addEventListener('error', function () {
+      var sp = document.createElement('span'), k = im.getAttribute('data-kind');
+      sp.className = 'ico' + (k === 'deck' ? ' wide' : ''); sp.textContent = k.toUpperCase();
+      im.parentNode.replaceChild(sp, im);
+    });
+  });
+})();
+</script>
+</div>
+
 <div class="note" style="margin-bottom:18px;">Units controlled by the site-wide US/SI toggle at the top of the Process Engineering Tools section above.</div>
 
 <div class="layout">

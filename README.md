@@ -6,6 +6,11 @@ It selects speed, checks NPSH and suction specific speed, sizes the impeller and
 predicts the performance curve and efficiencies, and estimates axial thrust. It can also fill a vendor
 pump data sheet (PDF) with the results.
 
+> **Make it yours, free:** download this repo (**Code → Download ZIP**, or `git clone`), open the folder in
+> VS Code or any editor, and extend it for your own case with your AI assistant. This README is written for
+> both of you. Taking these tools further is a free service of
+> [Sharpes Process Engineering](https://jsharpes-portfolio.netlify.app); the site's Ask box can point you to the right starting file.
+
 - **Live tool:** https://jsharpes-portfolio.netlify.app/#cps-calc
 - **Run it locally:** download this repo and open `index.html`. The data-sheet download loads `pdf-lib`
   from a CDN, so it needs internet. `project/Case Study Sizing Tool (standalone, newest UI).html` runs fully

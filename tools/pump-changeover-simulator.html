@@ -83,7 +83,8 @@
 </head>
 <body>
 <script>if (window.self !== window.top) { document.documentElement.classList.add('embedded'); }</script>
-<style>.embedded body > h1, .embedded body > .subtitle { display:none; }</style>
+<style>.embedded body > h1, .embedded body > .subtitle { display:none; }
+  .embedded body { background: transparent; padding: 0 0 8px; max-width: none; }</style>
 
 <h1>Pump Changeover Simulator</h1>
 <div class="subtitle">Two identical centrifugal pumps on a common header. Pump A is running; pump B is about to be started for a changeover. This checks whether B's check valve will lift against the header, where both pumps sit during the overlap relative to minimum flow, and how hot a deadheaded pump gets under the protection layers you select. Pump data comes from the <a href="Case Study Sizing Tool.html">Centrifugal Pump Sizing tool</a> (its default pump, or the one you hand over from it). US units only in this version.<br><b>Scope:</b> single-stage, radial/mixed-flow centrifugal pumps, the same screen the sizing tool applies (10–10,000 gpm, 15–1,000 ft, Ω<sub>s</sub> 0.2–1.6). Multistage, axial-flow and positive-displacement duties are refused. Header flow is limited to 30–130% of rated (the computed curve) and wear-ring clearance ratios to 1–4.</div>

@@ -568,7 +568,7 @@
       <div class="stat"><div class="v" id="cps-out_Qmin_int"></div><div class="l">Minimum flow — intermittent (K₄=0.7)</div><div class="s">&lt;25% of operating time</div></div>
       <div class="stat"><div class="v" id="cps-out_betaF2"></div><div class="l">Exit flow angle β<sub>f,2</sub></div><div class="s" id="cps-out_betaF2_note"></div></div>
     </div>
-    <div class="note" style="margin-top:12px; margin-bottom:0;">These feed the parallel-pump changeover check: <a id="cps-changeoverLink" href="tools/pump-changeover-simulator.html" target="_blank" rel="noopener">open the Pump Changeover Simulator with this pump →</a></div>
+    <div class="note" style="margin-top:12px; margin-bottom:0;">These feed the parallel-pump changeover check: the <a id="cps-changeoverLink" href="#pcs-tool">Pump Changeover Simulator</a> below always runs this pump.</div>
     </div>
   </details>
 
@@ -1394,8 +1394,10 @@ function runSizing(){
   document.getElementById('cps-out_betaF2_note').textContent=`vs blade angle ${fmt(res.beta2b,1)}° (slip); used in Q_DR`;
   try{
     const hand = buildChangeoverHandoff(res, fluidSelect.value, valUS('T','temp'), SG, valUS('vp','press'), Q_gpm);
-    document.getElementById('cps-changeoverLink').href = 'tools/pump-changeover-simulator.html#p=' + encodeURIComponent(JSON.stringify(hand));
-  }catch(e){ document.getElementById('cps-changeoverLink').href = 'tools/pump-changeover-simulator.html'; }
+    const url = 'tools/pump-changeover-simulator.html#p=' + encodeURIComponent(JSON.stringify(hand));
+    const pcs = document.getElementById('pcs-frame');
+    if (pcs) { pcs.dataset.src = url; if (pcs.getAttribute('src')) pcs.src = url; }   // hash-only change: simulator re-reads the pump, no reload
+  }catch(e){ /* simulator keeps the last pump it was given */ }
   document.getElementById('cps-mechBox').innerHTML=`<b>Selected mechanism: ${res.mechanism}</b><br>${res.mechDesc}`;
 
   document.getElementById('cps-out_etaTotal_final').textContent=`${fmt(res.etaTotal_final*100,1)}%`;
@@ -1565,6 +1567,42 @@ runSizing();
 
       </div>
     </details>
+<details>
+      <summary>
+        <span class="sum-arrow">›</span>
+        <span class="sum-title">Pump Changeover Simulator — Parallel Pump Start, Lift Check &amp; Deadhead Heating</span>
+        <span class="sum-count">uses the pump sized above</span>
+      </summary>
+      <div class="details-body">
+        <p class="card-desc">Two identical centrifugal pumps on a common header: pump A is running and pump B is started for a changeover. Checks whether B's check valve lifts against the header (worn zero-flow head vs. header head), how flow splits during the overlap against the Karassik Table 16 minimum flow, and how fast a deadheaded pump heats its casing hold-up, with bypass, SIS trip and operator-response layers. Defaults to the sizing tool's 500 gpm / 300 ft case study; any pump sized in the tool above hands over through the "open the Pump Changeover Simulator with this pump" link in its Low-flow limits panel.</p>
+        <div id="pcs-tool"><iframe id="pcs-frame" class="tool-embed" data-src="tools/pump-changeover-simulator.html" title="Pump Changeover Simulator" loading="lazy"></iframe></div>
+      </div>
+    </details>
+<!-- TOOL-EMBED LOADER (build_packages.py copies this block into standalone repo pages) -->
+<style>
+  /* Tools that run as their own page are embedded in their row; loaded on first open, sized to content */
+  iframe.tool-embed{display:block;width:100%;height:1600px;border:1px solid var(--border, #e5e7eb);border-radius:8px;margin-top:12px;background:#fff;}
+</style>
+<script>
+(function () {
+  document.querySelectorAll('iframe.tool-embed').forEach(function (f) {
+    var row = f.closest('details');
+    function load() {
+      if (!row.open || f.getAttribute('src')) return;
+      f.addEventListener('load', function () {
+        try {
+          var doc = f.contentDocument, fit = function () { f.style.height = doc.documentElement.scrollHeight + 'px'; };
+          fit(); new ResizeObserver(fit).observe(doc.body);
+        } catch (e) { /* not same-origin (opened from disk): keep the fixed height and let it scroll */ }
+      });
+      f.src = f.dataset.src;
+    }
+    row.addEventListener('toggle', load);
+    load();
+  });
+})();
+</script>
+<!-- /TOOL-EMBED LOADER -->
   </div>
 </section>
 </body>

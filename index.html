@@ -1395,6 +1395,7 @@ function runSizing(){
   try{
     const hand = buildChangeoverHandoff(res, fluidSelect.value, valUS('T','temp'), SG, valUS('vp','press'), Q_gpm);
     const url = 'tools/pump-changeover-simulator.html#p=' + encodeURIComponent(JSON.stringify(hand));
+    window.CPS_PCS_URL = url;   // read by the embed loader if the simulator row is opened later
     const pcs = document.getElementById('pcs-frame');
     if (pcs) { pcs.dataset.src = url; if (pcs.getAttribute('src')) pcs.src = url; }   // hash-only change: simulator re-reads the pump, no reload
   }catch(e){ /* simulator keeps the last pump it was given */ }
@@ -1575,7 +1576,7 @@ runSizing();
       </summary>
       <div class="details-body">
         <p class="card-desc">Two identical centrifugal pumps on a common header: pump A is running and pump B is started for a changeover. Checks whether B's check valve lifts against the header (worn zero-flow head vs. header head), how flow splits during the overlap against the Karassik Table 16 minimum flow, and how fast a deadheaded pump heats its casing hold-up, with bypass, SIS trip and operator-response layers. Defaults to the sizing tool's 500 gpm / 300 ft case study; any pump sized in the tool above hands over through the "open the Pump Changeover Simulator with this pump" link in its Low-flow limits panel.</p>
-        <div id="pcs-tool"><iframe id="pcs-frame" class="tool-embed" data-src="tools/pump-changeover-simulator.html" title="Pump Changeover Simulator" loading="lazy"></iframe></div>
+        <div id="pcs-tool"><iframe id="pcs-frame" class="tool-embed" data-src="tools/pump-changeover-simulator.html" data-src-var="CPS_PCS_URL" title="Pump Changeover Simulator" loading="lazy"></iframe></div>
       </div>
     </details>
 <!-- TOOL-EMBED LOADER (build_packages.py copies this block into standalone repo pages) -->
@@ -1595,7 +1596,7 @@ runSizing();
           fit(); new ResizeObserver(fit).observe(doc.body);
         } catch (e) { /* not same-origin (opened from disk): keep the fixed height and let it scroll */ }
       });
-      f.src = f.dataset.src;
+      f.src = (f.dataset.srcVar && window[f.dataset.srcVar]) || f.dataset.src;   // e.g. the pump just sized above
     }
     row.addEventListener('toggle', load);
     load();

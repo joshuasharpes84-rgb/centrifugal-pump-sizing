@@ -53,6 +53,8 @@
   .pill.ok{color:var(--ok-tx);} .pill.warn{color:var(--warn-tx);} .pill.bad{color:var(--bad-tx);}
   .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
   @media (max-width: 700px){ .grid3{grid-template-columns:1fr 1fr;} }
+  /* phones: one column, and let inputs shrink (their default width forced ~200 px columns, 2026-10-29) */
+  @media (max-width: 480px){ .row2, .grid3, .layout{grid-template-columns:minmax(0,1fr);} input, select{min-width:0; max-width:100%;} table{display:block; max-width:100%; overflow-x:auto;} }
   .stat{background:var(--panel2); border:1px solid var(--border); border-radius:2px; padding:10px 12px;}
   .stat .v{font-size:1.1rem; font-weight:700; font-family:"SFMono-Regular",Consolas,monospace; color:var(--heading);}
   .stat .l{font-size:0.72rem; color:var(--muted); margin-top:2px;}
